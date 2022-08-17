@@ -9,7 +9,7 @@ load_or_install<-function(package_names)
       install.packages(package_name, 
                        repos=c("http://lib.stat.cmu.edu/R/CRAN",
                                "https://iqrtools.intiquan.com/rrepo",
-                               "https://cran.r-project.org/"))
+                               "https://cran.r-project.org/"), dependencies = T)
     }
     library(package_name,character.only=TRUE,quietly=TRUE,verbose=FALSE)
   }
