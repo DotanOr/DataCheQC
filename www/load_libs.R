@@ -54,26 +54,19 @@ load_or_install<-function(package_names)
       message(paste0("installing package ",package_name,", version ",package_vers))
       if (package_name == "IQRtools"){
         source("https://iqrtoolsabc321.intiquan.com/install.R")
-        IQR_dependencies <- c("nlme",
-                              "survival",
-                              "cluster",
-                              "foreign",
-                              "nnet",
-                              "reshape2",
-                              "Rcpp",
-                              "foreach",
-                              "doParallel",
-                              "rootSolve",
-                              "deSolve",
-                              "numDeriv",
-                              "brglm2",
-                              "PopED",
-                              "pdftools",
-                              "fpc",
-                              "writexl",
-                              "kableExtra",
-                              "ResourceSelection")
-        lapply(IQR_dependencies[!is_installed(IQR_dependencies)],install.packages)
+        repos <- "https://cran.microsoft.com/snapshot/2020-03-15"
+        local({
+          r <- getOption("repos")
+          r["CRAN"] <- repos
+          options(repos = r)
+        })
+        
+        requiredPackages <- c(
+          "nlme","survival","gridExtra","ggplot2","plyr","cluster","foreign","nnet",
+          "SASxport","reshape2","Rcpp","cowplot","tidyr","dplyr","foreach","doParallel","RJSONIO","rjson",
+          "rootSolve","deSolve","numDeriv","haven","brglm2","PopED","pdftools","fpc","writexl","kableExtra","ResourceSelection"
+        )
+        install.packages(requiredPackages,repos=repos,dependencies=TRUE,method=methodDownload)
         installVersion <- package_vers
         # Download IQR Tools
         url <- paste0("http://iqrtoolsabc321.intiquan.com/rrepo/src/contrib/IQRtools_",installVersion,".tar.gz")
