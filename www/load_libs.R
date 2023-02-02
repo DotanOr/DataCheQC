@@ -91,7 +91,7 @@ load_or_install<-function(package_names)
         }
         
         # Install IQR Tools
-        install.packages(destfile, repos=NULL, type="source", clean = TRUE)
+        install.packages(destfile, repos=NULL, type="source", clean = TRUE,dependencies = F)
         unlink(destfile)
         
         # Install cOde and dMod if needed
