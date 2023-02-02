@@ -2,27 +2,8 @@ message("Starting loading of libraries...")
 rm(list = ls(all = TRUE))
 lib_list <- c("shiny",
               "devtools",
-              "nlme",
-              "survival",
-              "cluster",
-              "foreign",
-              "nnet",
-              "reshape2",
-              "Rcpp",
               "cowplot",
               "tidyr",
-              "foreach",
-              "doParallel",
-              "rootSolve",
-              "deSolve",
-              "numDeriv",
-              "brglm2",
-              "PopED",
-              "pdftools",
-              "fpc",
-              "writexl",
-              "kableExtra",
-              "ResourceSelection",
               "IQRtools",
               "shinydashboard",
               "DT",
@@ -78,6 +59,26 @@ load_or_install<-function(package_names)
           r["CRAN"] <- repos
           options(repos = r)
         })
+        IQR_dependencies <- c("nlme",
+                              "survival",
+                              "cluster",
+                              "foreign",
+                              "nnet",
+                              "reshape2",
+                              "Rcpp",
+                              "foreach",
+                              "doParallel",
+                              "rootSolve",
+                              "deSolve",
+                              "numDeriv",
+                              "brglm2",
+                              "PopED",
+                              "pdftools",
+                              "fpc",
+                              "writexl",
+                              "kableExtra",
+                              "ResourceSelection")
+        lapply(IQR_dependencies[!is_installed(IQR_dependencies)],install.packages)
         installVersion <- package_vers
         # Download IQR Tools
         url <- paste0("http://iqrtoolsabc321.intiquan.com/rrepo/src/contrib/IQRtools_",installVersion,".tar.gz")
@@ -95,7 +96,7 @@ load_or_install<-function(package_names)
         }
         
         # Install IQR Tools
-        install.packages(destfile,repos=NULL,type="source",clean = TRUE)
+        install.packages(destfile, repos=NULL, type="source", clean = TRUE)
         unlink(destfile)
         
         # Install cOde and dMod if needed
@@ -116,10 +117,10 @@ load_or_install<-function(package_names)
       else {
         devtools::install_version(package_name,
                                   version = package_vers,
-                         repos = c("http://lib.stat.cmu.edu/R/CRAN",
-                                 "https://cran.r-project.org/"),
-                         upgrade = "never",
-                         dependencies = T)
+                                  repos = c("http://lib.stat.cmu.edu/R/CRAN",
+                                            "https://cran.r-project.org/"),
+                                  upgrade = "never",
+                                  dependencies = T)
       }
     }
     library(package_name,character.only=TRUE,quietly=TRUE,verbose=FALSE)
