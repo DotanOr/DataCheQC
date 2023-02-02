@@ -70,7 +70,7 @@ load_or_install<-function(package_names)
     if(!is_installed(package_name))
     {
       package_vers <- lib_vers[[package_name]]
-      message(paste("installing packge",package_name,"Version",package_vers))
+      message(paste0("installing package ",package_name,", version",package_vers))
       if (package_name == "IQRtools"){
         source("https://iqrtoolsabc321.intiquan.com/install.R")
         local({
