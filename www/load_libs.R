@@ -54,11 +54,6 @@ load_or_install<-function(package_names)
       message(paste0("installing package ",package_name,", version ",package_vers))
       if (package_name == "IQRtools"){
         source("https://iqrtoolsabc321.intiquan.com/install.R")
-        local({
-          r <- getOption("repos")
-          r["CRAN"] <- repos
-          options(repos = r)
-        })
         IQR_dependencies <- c("nlme",
                               "survival",
                               "cluster",
