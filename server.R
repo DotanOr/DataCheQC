@@ -1941,7 +1941,7 @@ server <- function(input, output, session) {
         unlist(F,F)
       choices <- c(conc_name, choices[!(str_detect(choices, conc_name))])
       updateSelectInput(session = getDefaultReactiveDomain(), inputId = "obs_select", choices = choices)
-      show("obs_select", anim = T)
+      shinyjs::show("obs_select", anim = T)
     })
   obs_list <- eventReactive(
     {
@@ -2325,7 +2325,7 @@ server <- function(input, output, session) {
           LIDV_NORM = LIDV / DOSE # Dose-normalized Value
           # LIDV_UNIT    = ifelse(CMT==2, "ng/ml", NA )
         ) %>%
-        plyr::arrange(DOSE) %>%
+        dplyr::arrange(DOSE) %>%
         # Create a factor for the treatment variable for plotting
         mutate(
           `TRTNAME Ascending` = factor(TRTACT,
