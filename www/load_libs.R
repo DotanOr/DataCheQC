@@ -90,7 +90,7 @@ load_or_install<-function(package_names)
       message(paste("installing packge",package_name,"Version",package_vers))
       if (package_name == "IQRtools"){
         source("https://iqrtoolsabc321.intiquan.com/install.R")
-        installVersion.IQRtools("1.8.0")
+        installVersion.IQRtools("1.8.0", forceDependencies = T)
       }
       else if (package_name == "devtools") {
         install.packages("devtools")
