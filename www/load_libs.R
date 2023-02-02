@@ -1,6 +1,7 @@
 message("Starting loading of libraries...")
 rm(list = ls(all = TRUE))
 lib_list <- c("shiny",
+              "devtools",
               "shinydashboard",
               "IQRtools",
               "DT",
@@ -90,6 +91,9 @@ load_or_install<-function(package_names)
       if (package_name == "IQRtools"){
         source("https://iqrtoolsabc321.intiquan.com/install.R")
         installVersion.IQRtools("1.8.0")
+      }
+      else if (package_name == "devtools") {
+        install.packages("devtools")
       }
       else {
         devtools::install_version(package_name,
