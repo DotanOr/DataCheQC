@@ -1,6 +1,6 @@
 # load in modular scripts-----------------------------------------------------------------------------------------
 source("docxtractr.R")
-plan(multiprocess) # to enable multiple concurrent users
+plan(multisession) # to enable multiple concurrent users
 
 ### Function added to improve ggplot render quality/anti-aliasing-------------------------------------------------
 trace(grDevices:::tiff, quote({
@@ -34,7 +34,7 @@ graphics.off()
 ###
 
 server <- function(input, output, session) {
-  options(shiny.maxRequestSize = 1000 * 1024^2, future.globals.maxSize = 1000 * 1024^2) # Max upload size at 1 GB
+  options(shiny.maxRequestSize = 1000 * 1024^2, shiny.fullstacktrace = TRUE, future.globals.maxSize = 1000 * 1024^2) # Max upload size at 1 GB
   
   ## Update various fileInput progress bars and username if it exists
   ## Update various fileInput progress bars and username if it exists and choose download format
@@ -505,7 +505,7 @@ server <- function(input, output, session) {
           dataIQR = dataIQR,
           impute_rule = impute_rule
         )
-      }) %...>% (function(result) {
+      }, seed = T) %...>% (function(result) {
         enable("generateReport")
         cli::cat_rule(
           sprintf("Back from %s", result$id)
@@ -601,7 +601,7 @@ server <- function(input, output, session) {
     {
       rv$last_id <- rv$last_id + 1
       last_id <- rv$last_id
-      x <- dataset()
+      x <- rv_dat$imputeIQR
       clean_flag <- input_list_d()$clean_flag
       pre_clean <- output_holdover[["pre_cleaned_data"]]
       impute_r <- output_holdover[["impute_rule"]]
@@ -973,7 +973,7 @@ server <- function(input, output, session) {
       else {
         show_rows <-
           mydata() %>%
-          filter(sapply(X = mydata()[, ..col_vars], is.na))
+          filter(across(col_vars,is.na))
       }
       
       showModal(
@@ -1298,8 +1298,9 @@ server <- function(input, output, session) {
       scroller = TRUE,
       dom = "Bfrtp",
       buttons = "excel",
-      pageLength = min(length(col_choose_d()), nrow(data_cols_table())),
-      scrollY = 10 + (50 * min(length(col_choose_d()), nrow(data_cols_table()))),
+      paging = F,
+      #pageLength = min(length(col_choose_d()), nrow(data_cols_table())),
+      #scrollY = 10 + (50 * min(length(col_choose_d()), nrow(data_cols_table()))),
       rowHeight = 30,
       # function to mark duplicated rows in red (e.g., if they have different units for the same variable)
       ## and mark rows with multiple NA/Blank values in yellow
@@ -1393,8 +1394,10 @@ server <- function(input, output, session) {
         runjs("$('.progress-bar').addClass('progress-bar-striped progress-bar-animated');")
         fut <- future({
           progress$inc(1 / 4, detail = "Creating plot...")
-          filen <- tempfile(fileext = ".pdf")
-          sched <- plotSampleSchedule_IQRdataGENERAL(data, NperPage = 5, FLAGreturnObject = TRUE, filename = filen) %>%  
+          sched <- plotSampleSchedule_IQRdataGENERAL(data,
+                                                     NperPage = 5,
+                                                     FLAGreturnObject = TRUE,
+                                                     filename = NULL) %>%  
             lapply(
               function(x){
                 x$labels$title %<>%
@@ -1403,11 +1406,10 @@ server <- function(input, output, session) {
                 return(x)
               }
             )
-          unlink(filen)
           progress$inc(1 / 4, detail = "Finishing up...")
           progress$close()
           list(id = last_id, sched = sched)
-        }) %...>% ({
+        }, seed = T) %...>% ({
           function(result) {
             cli::cat_rule(
               sprintf("Back from %s", result$id)
@@ -1452,8 +1454,10 @@ server <- function(input, output, session) {
         runjs("$('.progress-bar').addClass('progress-bar-striped progress-bar-animated');")
         fut <- future({
           progress$inc(1 / 4, detail = "Creating plot...")
-          filen <- tempfile(fileext = ".pdf")
-          dose <- plotDoseSchedule_IQRdataGENERAL(data, NperPage = 5, FLAGreturnObject = TRUE, filename = filen) %>%
+          dose <- plotDoseSchedule_IQRdataGENERAL(data,
+                                                  NperPage = 5,
+                                                  FLAGreturnObject = TRUE,
+                                                  filename = NULL) %>%
             lapply(
               function(x){
                 x$labels$title %<>% 
@@ -1463,11 +1467,10 @@ server <- function(input, output, session) {
                 return(x)
               }
             )
-          unlink(filen)
           progress$inc(1 / 4, detail = "Finishing up...")
           progress$close()
           list(id = last_id, dose = dose)
-        }) %...>% ({
+        }, seed = T) %...>% ({
           function(result) {
             cli::cat_rule(
               sprintf("Back from %s", result$id)
@@ -1776,7 +1779,7 @@ server <- function(input, output, session) {
   
   
   time_units_dataset <- reactive({
-    mydata() %>% # xgx_scale_x_time_units() converts this
+    mydata() %>%
       select(TIMEUNIT) %>% # time unit variable...
       unique() %>%
       str_to_title()
@@ -1844,7 +1847,7 @@ server <- function(input, output, session) {
       source("gen_spag_obj.R")
       req(dataset)
       req(!is.null(input$obs_select))
-      data <- dataset() %>% filter(NAME %in% input$obs_select) %>% mutate(MDV = 0)
+      data <- dataset() %>% filter(NAME %in% input$obs_select)
       strat_list <- gen_spag_obj(data, stratify = strat_choice_d())
       strat_list <- lapply(
         strat_list,
@@ -1875,7 +1878,7 @@ server <- function(input, output, session) {
     {
       req(dataset)
       req(!is.null(input$obs_select))
-      data <- dataset() %>% filter(NAME %in% input$obs_select) %>% mutate(MDV = 0)
+      data <- dataset() %>% filter(NAME %in% input$obs_select)
       strat_list <- plotRange_IQRdataGENERAL(
         data = data,
         stratify = range_strat_choice_d(),
@@ -1892,7 +1895,6 @@ server <- function(input, output, session) {
             ))
         }
       )
-      
       return(strat_list)
     }
   )
@@ -2014,12 +2016,12 @@ server <- function(input, output, session) {
                            data = filter(pkpd_data(), CENS == 1, TRTNAME == input$page_spagind),
                            color = "red", shape = 8, size = 2
                          ) +
-                         xgx_scale_x_time_units(
-                           units_dataset = time_units_dataset(),
-                           units_plot = time_units_plot,
-                           breaks = seq(0, max_ticks_mad() + 14, time_ticks_mad()),
-                           limits = c(0, max_ticks_mad() + 14)
-                         ) +
+                         # xgx_scale_x_time_units(
+                         #   units_dataset = time_units_dataset(),
+                         #   units_plot = time_units_plot,
+                         #   breaks = seq(0, max_ticks_mad() + 14, time_ticks_mad()),
+                         #   limits = c(0, max_ticks_mad() + 14)
+                         # ) +
                          scale_y_log10() +
                          xlab("Time (Days)") +
                          labs(y = ylabel) +
@@ -2545,7 +2547,7 @@ server <- function(input, output, session) {
       else if (input$format_png) {
         layers <- curplot$layers %>%
           sapply(function(x) x$geom %>% class()) %>%
-          sapply(function(x) x[[1]][1])
+          first()
         if (any(str_detect(layers, "GeomSmooth"))) {
           curplot$layers[[match("GeomSmooth", layers)]]$size <- curplot$layers[[match("GeomSmooth", layers)]]$size + 1
         }
@@ -3033,11 +3035,11 @@ server <- function(input, output, session) {
                         alpha = 0.3,
                         size = 1
               ) +
-              xgx_scale_y_log10() +
-              xgx_scale_x_time_units(
-                units_dataset = time_units_dataset(),
-                units_plot = time_units_plot
-              ) +
+              scale_y_log10() +
+              # xgx_scale_x_time_units(
+              #   units_dataset = time_units_dataset(),
+              #   units_plot = time_units_plot
+              # ) +
               labs(
                 x = paste0("Time [", time_units_dataset(), "]"),
                 y = paste0(obs_name," [", obs_unit, "]")
