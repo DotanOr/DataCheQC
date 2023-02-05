@@ -1,14 +1,14 @@
 createShinylog <- function(outputfilename, user = "App User"){
   COMPLIANCE_MODE_SCRIPT_NAME <- "DataExploR Shiny App Server"
   title <- "<TT>   File generation log"
-  logfile_name <- paste(outputfilename, 
+  logfile_name <- paste(as.character(outputfilename), 
                         ".log", sep = "")
   
   if(str_detect(outputfilename,"figures")){
-    reg_filename <- str_split(outputfilename,"figures/")[[1]][2]
+    reg_filename <- stringr::str_split(outputfilename,"figures/")[[1]][2]
   }
   else if(str_detect(outputfilename,"summary_tables")){
-    reg_filename <- str_split(outputfilename,"summary_tables/")[[1]][2]
+    reg_filename <- stringr::str_split(outputfilename,"summary_tables/")[[1]][2]
   }
   
   outputfilename <- stringr::str_replace_all("//", "/", outputfilename)
