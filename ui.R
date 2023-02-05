@@ -98,7 +98,7 @@ ui <- dashboardPage(
       id = "tabs",
       shiny::HTML('<li>
                 <a href="#shiny-tab-qc_tab" data-toggle="tab" data-value="qc_tab">
-                <i class="fa fa-fas fa-clipboard-list far"></i>
+                <i class="fa fa-fas fa-clipboard far"></i>
                 <span style="padding-left: 8%">Data Specs</span>
                 </a>
                 </li>'),
