@@ -92,6 +92,7 @@ server <- function(input, output, session) {
   mydata <- eventReactive(input$file_path, { # Load the data
     req(path())
     ext <- file_ext(path())
+    message("file uploaded")
     if (ext == "csv") {
       mydata <- data.table::fread(path(), stringsAsFactors = FALSE)
     }
@@ -297,8 +298,8 @@ server <- function(input, output, session) {
     {
       reset("mydata")
       reset("dataset")
-      reset("input$plot_type")
-      reset("input$obsIn")
+      reset("plot_type")
+      reset("obsIn")
       reset("doseIn")
     },
     ignoreInit = TRUE
@@ -834,13 +835,7 @@ server <- function(input, output, session) {
       input$event_table_switch
     },
     {
-      runjs("
-            var select, $select;
-            $select = $('#col_choose').selectize();
-            select = $select[0].selectize;
-            select.clear();
-            select.setValue('');
-            ")
+      updateSelectInput(session = getDefaultReactiveDomain(), inputId = "col_choose", selected = "")
     }
   )
   
@@ -1042,7 +1037,6 @@ server <- function(input, output, session) {
     req(spec_path())
     req(!is.null(input$opt_flag))
     req(!is.null(input$pmxian_flag))
-    
     if (file_ext(spec_path()) %>% str_detect("docx")) {
       specs <- read_docx(spec_path(), track_changes = "accept")
       tables <- docx_extract_all_tbls(specs)
