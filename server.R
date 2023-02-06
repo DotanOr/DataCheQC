@@ -1,6 +1,6 @@
 # load in modular scripts-----------------------------------------------------------------------------------------
 source("docxtractr.R")
-plan(multisession) # to enable multiple concurrent users
+plan(multisession, workers = 1) # to enable multiple concurrent users
 
 ### Function added to improve ggplot render quality/anti-aliasing-------------------------------------------------
 trace(grDevices:::tiff, quote({
@@ -647,7 +647,7 @@ server <- function(input, output, session) {
                                  filename = paste0(dir, "/", folder, "/figures/FIG02_Individual_Plots")
         )
         createShinylog(paste0(dir, "/", folder, "/figures/FIG02_Individual_Plots"), user)
-        
+
         progress$inc(1 / 12, detail = "Generating covariate distribution plots...")
         plotCovDistribution_IQRdataGENERAL(x,
                                            filename = paste0(dir, "/", folder, "/figures/FIG03_Covariate_Distributions")
@@ -713,53 +713,14 @@ server <- function(input, output, session) {
         createShinylog(paste0(dir, "/", folder, "/figures/FIG09_Sampling_Schedule"), user)
         
         progress$inc(1 / 12, detail = "Generating summary tables...")
-        summaryCov_IQRdataGENERAL(x,
-                                  FLAGtotal = TRUE,
-                                  filename = paste0(dir, "/", folder, "/summary_tables/TAB01_Continuous_Covariate_Summary.txt")
-        )
-        createShinylog(paste0(dir, "/", folder, "/summary_tables/TAB01_Continuous_Covariate_Summary"), user)
         
-        summaryCat_IQRdataGENERAL(x,
-                                  FLAGtotal = TRUE,
-                                  filename = paste0(dir, "/", folder, "/summary_tables/TAB02_Categorical_Covariate_Summary.txt")
-        )
-        createShinylog(paste0(dir, "/", folder, "/summary_tables/TAB02_Categorical_Covariate_Summary"), user)
-        
-        summaryObservations_IQRdataGENERAL(x,
-                                           filename = paste0(dir, "/", folder, "/summary_tables/TAB03_Observations_Summary.txt")
-        )
-        createShinylog(paste0(dir, "/", folder, "/summary_tables/TAB03_Observations_Summary"), user)
-        
-        if (clean_flag) {
-          # clean the data
-          clean_IQRdataGENERAL(pre_clean,
-                               FLAGrmIGNOREDrecords = TRUE,
-                               methodBLLOQ = "M1",
-                               continuousCovs = impute_r,
-                               pathname = paste0(dir, "/", folder, "/summary_tables")
-          )
-          
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/01_Manually_Selected_Records"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/02_Missing_TIME_Observation_Records"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/03_Missing_DV_Observation_Records"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/04_Manually_Selected_Subjects"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/05_Non_Dose_Observation_Records"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/07_No_Observations_Subjects"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/08_Zero_Amount_Dose_Records"), user)
-          createShinylog(paste0(dir, "/", folder, "/summary_tables/10_Covariate_Imputations"), user)
-        }
-        
-        # Compress all files into zip for download
-        progress$inc(1 / 12, detail = "Zipping files...")
-        
-        # Erase Temp folder
-        progress$close()
         list(
           id = last_id,
           dir = dir,
+          user = user,
           folder = folder
         )
-      }) %...>%
+      }, seed = T) %...>%
         (function(result) {
           cli::cat_rule(
             sprintf("Back from %s", result$id)
@@ -769,6 +730,46 @@ server <- function(input, output, session) {
             # Send .zip archive for download
             rv$dir <- result$dir
             rv$folder <- result$folder
+            summaryCov_IQRdataGENERAL(rv_dat$imputeIQR,
+                                      FLAGtotal = TRUE,
+                                      filename = paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB01_Continuous_Covariate_Summary.txt")
+            )
+            createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB01_Continuous_Covariate_Summary"), result$user)
+            
+            summaryCat_IQRdataGENERAL(rv_dat$imputeIQR,
+                                      FLAGtotal = TRUE,
+                                      filename = paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB02_Categorical_Covariate_Summary.txt")
+            )
+            createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB02_Categorical_Covariate_Summary"), result$user)
+
+            summaryObservations_IQRdataGENERAL(rv_dat$imputeIQR,
+                                               filename = paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB03_Observations_Summary.txt")
+            )
+            createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB03_Observations_Summary"), result$user)
+            # Compress all files into zip for download
+            progress$inc(1 / 12, detail = "Zipping files...")
+            if (clean_flag) {
+              # clean the data
+              clean_IQRdataGENERAL(pre_clean,
+                                   FLAGrmIGNOREDrecords = TRUE,
+                                   methodBLLOQ = "M1",
+                                   continuousCovs = impute_r,
+                                   pathname = paste0(rv$dir, "/", rv$folder, "/summary_tables")
+              )
+              
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/01_Manually_Selected_Records"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/02_Missing_TIME_Observation_Records"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/03_Missing_DV_Observation_Records"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/04_Manually_Selected_Subjects"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/05_Non_Dose_Observation_Records"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/07_No_Observations_Subjects"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/08_Zero_Amount_Dose_Records"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/09_IGNORED_records"), result$user)
+              createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/10_Covariate_Imputations"), result$user)
+            }
+            # Erase Temp folder
+            progress$close()
+            
             shinyjs::runjs("document.getElementById('generateReport').click();")
           }
         }) %...!%
