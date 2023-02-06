@@ -1,4 +1,5 @@
 #start of global.R...
+rm(list = ls(all = TRUE))
 library(devtools)
 library(trust)
 library(bvpSolve)
