@@ -1,6 +1,6 @@
 # load in modular scripts-----------------------------------------------------------------------------------------
 source("docxtractr.R")
-plan(multisession, workers = 1) # to enable multiple concurrent users
+resetWorkers(plan(multisession, workers = 2)) # to enable multiple concurrent users
 
 ### Function added to improve ggplot render quality/anti-aliasing-------------------------------------------------
 trace(grDevices:::tiff, quote({
