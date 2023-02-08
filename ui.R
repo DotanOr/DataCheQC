@@ -1,6 +1,3 @@
-# load libraries
-source("www/load_libs.R")
-
 ui <- dashboardPage(
   skin = "purple",
   dashboardHeader(
