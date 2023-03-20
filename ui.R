@@ -83,7 +83,7 @@ ui <- dashboardPage(
                                     )
                            )
                   ),
-                  uiOutput("condit_download_bttn")
+                  hidden(uiOutput("condit_download_bttn"))
                 ) # </h4>
               )
             )
@@ -466,7 +466,7 @@ ui <- dashboardPage(
                   uiOutput("report_button")
                 ),
                 tags$span(
-                  style = "display: flex;",
+                  style = "display: flex; align-items: center;",
                   disabled(
                     selectInput(
                       inputId = "plot_type",
@@ -488,7 +488,7 @@ ui <- dashboardPage(
                   bs_embed_tooltip(
                     tag = icon("info-circle") %>%
                       tagAppendAttributes(id = "iconic_par",
-                                          style = "margin-top: 2.8%; margin-left: 1%; width: 1%; height: 1%"),
+                                          style = "margin-left: 0.6vw; margin-bottom: 0.3vw"),
                     placement = "right",
                     trigger = "focus",
                     html = "true",
