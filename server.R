@@ -19,6 +19,26 @@ backtick <- function(x, dequote = FALSE) {
   }
   sprintf("`%s`", x)
 }
+### function to check if any columns are missing from the dataset--------------------------------------------------
+check_columns <- function(df, col_names, id = "dataset") {
+  df_cols <- names(df)
+  missing_cols <- col_names[!col_names %in% df_cols]
+  
+  if (length(missing_cols) > 0) {
+    err_msg <- paste0("The following required columns are missing from the ",id,":\n", paste0("'", missing_cols, "'",collapse = ",\n"))
+    message(err_msg)
+    showNotification(ui = err_msg,
+                     duration = NULL,
+                     closeButton = T,
+                     id = paste0("err_",id %>% str_replace_all(" ","_")),
+                     type = "error")
+    return(FALSE)
+  } else {
+    message("All ",id, " columns are present.")
+    return(TRUE)
+  }
+}
+###
 ### Apply default theme for all plots--------------------------------------------
 ggplot2::theme_set(
   ggplot2::theme_bw()
@@ -36,7 +56,6 @@ graphics.off()
 server <- function(input, output, session) {
   options(shiny.maxRequestSize = 1000 * 1024^2, shiny.fullstacktrace = TRUE, future.globals.maxSize = 1000 * 1024^2) # Max upload size at 1 GB
   
-  ## Update various fileInput progress bars and username if it exists
   ## Update various fileInput progress bars and username if it exists and choose download format
   runjs('$(".progress-bar").addClass("progress-bar-striped progress-bar-animated");
          let svg = $("#format_choice button:nth-child(2)");
@@ -92,19 +111,29 @@ server <- function(input, output, session) {
   mydata <- eventReactive(input$file_path, { # Load the data
     req(path())
     ext <- file_ext(path())
-    message("file uploaded")
     if (ext == "csv") {
       mydata <- data.table::fread(path(), stringsAsFactors = FALSE)
-    }
-    if (ext == "sas7bdat") {
+    } else if (ext == "sas7bdat") {
       mydata <- read_sas(path())
+    } else {
+      showNotification("File type isn't .csv or .sas7bdat; please try a different file", duration = NULL, type = "error")
+    }
+    message("file uploaded")
+    # check if the data is compliant with the required dataset format
+    ## and return an error message/notification if it isn't
+    musthave_cols <- c("USUBJID","COMPOUND","TRTNAME","TIMEUNIT","NT","TIME","NAME","VALUE","VALUETXT","UNIT","ROUTE")
+    if(!check_columns(df = mydata, col_names = musthave_cols)){
+      return(NULL)
+    } else {
+      # make sure that the error message is removed if the user fixed the error
+      removeNotification(id = "err_dataset")
     }
     return(mydata)
   })
   
   ### Choose variables from dataset-----------------------------------------------------------
   output$DoseNames <- renderUI({ # Choose dosing records, attempt to select automatically
-    if (is.null(input$file_path)) {
+    if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
     
@@ -130,7 +159,7 @@ server <- function(input, output, session) {
   })
   
   output$ObsNames <- renderUI({ # Choose observation records, ""
-    if (is.null(input$file_path)) {
+    if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
     opts <- mydata() %>%
@@ -162,7 +191,7 @@ server <- function(input, output, session) {
   })
   
   output$ConCovNames <- renderUI({ # Select continuous covariates
-    if (is.null(input$file_path)) {
+    if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
     opts <- mydata() %>%
@@ -193,7 +222,7 @@ server <- function(input, output, session) {
   })
   
   output$CatCovNames <- renderUI({ # Select categorical covariates
-    if (is.null(input$file_path)) {
+    if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
     opts <- mydata() %>%
@@ -218,6 +247,9 @@ server <- function(input, output, session) {
   })
   
   output$depConCovNames <- renderUI({ # select time-dependent continuous covariates
+    if (is.null(input$file_path) | is.null(mydata())) {
+      return(NULL)
+    }
     opts <- mydata() %>%
       select(NAME, TYPENAME) %>%
       filter(TYPENAME != "Adverse Event") %>%
@@ -241,6 +273,9 @@ server <- function(input, output, session) {
   })
   
   output$depCatCovNames <- renderUI({ # select time-dependent categorical covariates
+    if (is.null(input$file_path) | is.null(mydata())) {
+      return(NULL)
+    }
     opts <- mydata() %>%
       select(NAME, TYPENAME) %>%
       filter(TYPENAME != "Adverse Event") %>%
@@ -264,7 +299,7 @@ server <- function(input, output, session) {
   })
   
   output$status_flag <- renderUI({ # option to mark plots with "Draft"
-    if (is.null(input$file_path)) {
+    if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
     
@@ -305,12 +340,16 @@ server <- function(input, output, session) {
     ignoreInit = TRUE
   ) # Works only after choosing the second dataset onwards
   
+  # notify the user that the dataset is loading
   observeEvent(
     {
-      input$file_path
+      mydata()
     },
     once = TRUE,
     {
+      if (is.null(input$file_path) | is.null(mydata())) {
+        return(NULL)
+      }
       showNotification("Loading...",
                        duration = 1,
                        closeButton = FALSE,
@@ -366,7 +405,7 @@ server <- function(input, output, session) {
     },
     ignoreInit = TRUE,
     { # Load chosen paramaters into model and clean the data (if the option is selected)
-      if (is.null(path())) {
+      if (is.null(input$file_path) | is.null(mydata())) {
         return(NULL)
       }
       
@@ -648,7 +687,7 @@ server <- function(input, output, session) {
                                  filename = paste0(dir, "/", folder, "/figures/FIG02_Individual_Plots")
         )
         createShinylog(paste0(dir, "/", folder, "/figures/FIG02_Individual_Plots"), user)
-
+        
         progress$inc(1 / 12, detail = "Generating covariate distribution plots...")
         plotCovDistribution_IQRdataGENERAL(x,
                                            filename = paste0(dir, "/", folder, "/figures/FIG03_Covariate_Distributions")
@@ -742,7 +781,7 @@ server <- function(input, output, session) {
                                       filename = paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB02_Categorical_Covariate_Summary.txt")
             )
             createShinylog(paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB02_Categorical_Covariate_Summary"), result$user)
-
+            
             summaryObservations_IQRdataGENERAL(rv_dat$imputeIQR,
                                                filename = paste0(rv$dir, "/", rv$folder, "/summary_tables/TAB03_Observations_Summary.txt")
             )
@@ -811,13 +850,108 @@ server <- function(input, output, session) {
     )
   })
   
-  output$column_choose <- renderUI({
-    if (is.null(input$event_table_switch)) {
+  output$opt_filter_flag <- renderUI({
+    req(spec_path())
+    req(input$event_table_switch != TRUE)
+    checkboxInput(
+      inputId = "opt_flag",
+      label = "Filter optional variables",
+      value = FALSE,
+      width = "195px"
+    )
+  })
+  
+  output$pmxian_filter_flag <- renderUI({
+    req(spec_path())
+    req(input$event_table_switch != TRUE)
+    checkboxInput(
+      inputId = "pmxian_flag",
+      label = "Filter variables requiring input from the pharmacometrician",
+      value = FALSE,
+      width = "195px"
+    )
+  })
+  
+  # read the information from the specification file -------------------------------------------
+  specs <- reactive({
+    req(spec_path())
+    
+    removeNotification(id = "not_enough_tables")
+    removeNotification(id = "err_specification_file")
+    removeNotification(id = "err_event_table")
+    
+    if (is.null(input$opt_flag) | is.null(input$pmxian_flag)){
+      return(NULL)
+    }
+    
+    if (file_ext(spec_path()) %>% str_detect("docx")) {
+      specs <- read_docx(spec_path(), track_changes = "accept")
+      tables <- docx_extract_all_tbls(specs)
+      
+      names(tables[[1]]) <- names(tables[[1]]) %>% 
+        str_replace_all("\\.{3}"," / ") %>% 
+        str_replace_all("\\."," ")
+    }
+    else if (file_ext(spec_path()) %>% str_detect("xlsx")) {
+      tables <- lapply(1:2, function (x) readxl::read_excel(spec_path(), sheet = x) %>% drop_na(NAME))
+    }
+    
+    if (length(tables) != 2){
+      showNotification("Your specification files must contain 2 tables: general and event.", 
+                       type = "error",
+                       id = "not_enough_tables",
+                       duration = NULL)
+      return(NULL)
+    } else {
+      removeNotification(id = "not_enough_tables")
+    }
+    
+    # check if all columns are present in the spec file
+    req_col_tables <- c("Name","Type","Label", "Required / Optional","PMXian input","Comments")
+    req_val_tables <- c("NAME","VALUE","VALUETEXT","UNIT","TYPENAME","LLOQ")
+    
+    column_specs <- tables[[1]]
+    # ensure uniform column names, even if they're spelled differently than expected
+    names(column_specs)[str_detect(names(column_specs),"^(?i)NAME$|^(?i)TYPE$|^(?i)LABEL$")] %<>% str_to_title()
+    names(column_specs)[str_detect(names(column_specs),"^(?i)Req|(?i)Req.*/.*Opt")] <- "Required / Optional"
+    names(column_specs)[str_detect(names(column_specs),"(?i)Pharmaco.*input")] <- "PMXian input"
+    names(column_specs)[str_detect(names(column_specs),"(?i)Comments")] <- "Comments"
+    value_specs <- tables[[2]]
+    
+    
+    if (!check_columns(column_specs, req_col_tables, "specification file") | !check_columns(value_specs, req_val_tables, "event table")){
       return(NULL)
     }
     else {
-      choice_list <- specs() %>% select(matches("^(?i)Name$")) %>% unlist(F,F)
+      removeNotification(id = "err_specification_file")
+      removeNotification(id = "err_event_table")
     }
+    
+    if (input$opt_flag & input$pmxian_flag) {
+      column_specs <- column_specs %>% 
+        filter(if_any(contains("Req"), ~ str_detect(.,"(?i)Req")) & if_any(contains("PMXian.input"), ~ . != "No"))
+    }
+    else if (input$opt_flag == TRUE) {
+      column_specs <- column_specs %>% filter(if_any(contains("Req"), ~ str_detect(.,"(?i)Req")))
+    }
+    else if (input$pmxian_flag == TRUE) {
+      column_specs <- column_specs %>% filter(if_any(contains("PMXian.input"), ~ . != "No"))
+    }
+    
+    if (input$event_table_switch == TRUE) {
+      return(value_specs)
+    }
+    
+    
+    colnames(column_specs)[5] <- str_to_title(colnames(column_specs)[5])
+    
+    
+    return(column_specs)
+  })
+  
+  output$column_choose <- renderUI({
+    req(!is.null(specs()))
+    choice_list <- specs() %>% select(matches("^(?i)Name$")) %>% unlist(F,F)
     selectInput(
       inputId = "col_choose",
       label = "Choose column(s) to examine:",
@@ -862,30 +996,9 @@ server <- function(input, output, session) {
                  )
                })
   
-  output$opt_filter_flag <- renderUI({
-    req(spec_path())
-    req(input$event_table_switch != TRUE)
-    checkboxInput(
-      inputId = "opt_flag",
-      label = "Filter optional variables",
-      value = FALSE,
-      width = "195px"
-    )
-  })
-  
-  output$pmxian_filter_flag <- renderUI({
-    req(spec_path())
-    req(input$event_table_switch != TRUE)
-    checkboxInput(
-      inputId = "pmxian_flag",
-      label = "Filter variables requiring input from the pharmacometrician",
-      value = FALSE,
-      width = "195px"
-    )
-  })
-  
+  #### align columns with each other ----------------------------------------
   output$align_columns <- renderUI({
-    req(spec_path)
+    req(spec_path())
     req(length(input$data_cols_rows_selected) > 1)
     req(input$event_table_switch == FALSE)
     tags$div(
@@ -893,9 +1006,11 @@ server <- function(input, output, session) {
       actionButton(
         inputId = "col_align",
         label = "Compare and align variables",
-        width = "100%",
-        style = "border-radius:50px;"
-      )
+        width = "100%"
+      ) %>% 
+        bs_embed_tooltip(title = "Check selected variables to see if they corrsepond as expected (e.g., NAME and UNIT)",
+                         placement = "right", 
+                         trigger = "focus")
     )
   })
   
@@ -904,6 +1019,8 @@ server <- function(input, output, session) {
       input$col_align
     },
     {
+      req(!is.null(specs()))
+      runjs('$("#col_align").tooltip("hide")')
       selected_rows <- input$data_cols_rows_selected
       showModal(
         modalDialog(
@@ -930,7 +1047,7 @@ server <- function(input, output, session) {
   )
   
   output$add_selected <- renderUI({
-    req(spec_path())
+    req(!is.null(specs()))
     req(length(input$data_cols_rows_selected) > 0)
     tags$div(
       class = "button-container", style = "padding-bottom:10px;",
@@ -944,13 +1061,17 @@ server <- function(input, output, session) {
   })
   
   output$review_nas_button <- renderUI({
+    req(!is.null(specs()))
     req(length(input$data_cols_rows_selected) > 0)
     actionButton(
       inputId = "review_nas",
       label = "Review NA rows",
       width = "100%",
       style = "margin-bottom: 10px;"
-    )
+    ) %>% 
+      bs_embed_tooltip(title = "Check selected variables to see in which rows they have NA values",
+                       placement = "right", 
+                       trigger = "focus")
   })
   
   observeEvent(
@@ -958,7 +1079,9 @@ server <- function(input, output, session) {
       input$review_nas
     },
     {
+      req(!is.null(specs()))
       selected_rows <- input$data_cols_rows_selected
+      runjs('$("#review_nas").tooltip("hide")')
       # compensate for selected columns that aren't in the dataset (make the index correct)
       col_vars <- data_cols_table()$Variable[selected_rows]
       if (input$event_table_switch) {
@@ -1004,6 +1127,7 @@ server <- function(input, output, session) {
       input$add_column_report
     },
     {
+      req(!is.null(specs()))
       closeAlert(session, "alert_report")
       
       selected_rows <- input$data_cols_rows_selected
@@ -1032,47 +1156,7 @@ server <- function(input, output, session) {
       )
     }
   )
-  # read the information from the specification file -------------------------------------------
-  specs <- reactive({
-    req(spec_path())
-    req(!is.null(input$opt_flag))
-    req(!is.null(input$pmxian_flag))
-    if (file_ext(spec_path()) %>% str_detect("docx")) {
-      specs <- read_docx(spec_path(), track_changes = "accept")
-      tables <- docx_extract_all_tbls(specs)
-    }
-    else if (file_ext(spec_path()) %>% str_detect("xlsx")) {
-      tables <- lapply(1:2, function (x) readxl::read_excel(spec_path(), sheet = x) %>% drop_na(NAME))
-    }
-    
-    column_specs <- tables[[1]]
-    value_specs <- tables[[2]]
-    
-    if (input$opt_flag & input$pmxian_flag) {
-      tables[[1]] <- column_specs %>% 
-        filter(if_any(contains("Req"), ~ str_detect(.,"(?i)Req")) & if_any(contains("PMXian.input"), ~ . != "No"))
-    }
-    else if (input$opt_flag == TRUE) {
-      tables[[1]] <- column_specs %>% filter(if_any(contains("Req"), ~ str_detect(.,"(?i)Req")))
-    }
-    else if (input$pmxian_flag == TRUE) {
-      tables[[1]] <- column_specs %>% filter(if_any(contains("PMXian.input"), ~ . != "No"))
-    }
-    
-    if (input$event_table_switch == TRUE) {
-      return(tables[[2]])
-    }
-    
-    colnames(tables[[1]])[4] <- str_replace(colnames(tables[[1]])[4], "\\.{3,}", " / ")
-    
-    colnames(tables[[1]])[5] <- str_replace(colnames(tables[[1]])[5], "\\.", " ") %>%
-      paste("Required /",.) %>%
-      str_to_title()
-    
-    colnames(tables[[1]])[6] <- str_replace(colnames(tables[[1]])[6], "\\.", " / ")
-    
-    return(tables[[1]])
-  })
+  
   
   output$cur_title <- renderText({
     if (is.null(report_columns$reporto)) {
@@ -1169,9 +1253,15 @@ server <- function(input, output, session) {
   })
   # show the data from the dataset and provide relevant info (duplicated values, NAs, etc.)-------------------------
   data_cols_table <- reactive({
-    if (!is.null(spec_path()) | is.null(col_choose_d())) {
-      NULL
+    req(specs())
+    req(col_choose_d())
+    if (class(try(mydata(), silent = T))[1] == "try-error"){
+      showNotification("No dataset loaded yet - showing only specs", duration = NULL, id = "missing_data_err", type = "error")
+      req(mydata())
+    } else {
+      removeNotification(id = "missing_data_err")
     }
+    
     if (!is.null(spec_path()) & !is.null(col_choose_d())) {
       if (input$event_table_switch) { # for variables derived from the NAME-VALUE-VALUETXT columns
         table <- c()
@@ -1293,8 +1383,8 @@ server <- function(input, output, session) {
       scroller = TRUE,
       dom = "Bfrtp",
       buttons = "excel",
-      paging = F,
-      #pageLength = min(length(col_choose_d()), nrow(data_cols_table())),
+      paging = T,
+      pageLength = min(length(col_choose_d()), nrow(data_cols_table())),
       #scrollY = 10 + (50 * min(length(col_choose_d()), nrow(data_cols_table()))),
       rowHeight = 30,
       # function to mark duplicated rows in red (e.g., if they have different units for the same variable)
@@ -1332,7 +1422,7 @@ server <- function(input, output, session) {
   
   # Show columns from specification file
   output$spec_cols <- renderDataTable(
-    if (!is.null(input$event_table_switch) & isTruthy(col_choose_d())) {
+    if (!is.null(input$event_table_switch) & isTruthy(col_choose_d()) & !is.null(specs())) {
       specs() %>% filter(if_any(contains("Name"), ~ . %in% col_choose_d()))
     }
     else {
@@ -1366,6 +1456,28 @@ server <- function(input, output, session) {
         dplyr::select(USUBJID, TIME, VALUE)
     }
   })
+  ### Change the tooltip text to fit the different plot types -------
+  observeEvent({
+    input$plot_type
+  },
+  {
+    req(!is.null(mydata()))
+    # select the appropriate tip to display according to the plot type
+    tooltip_title <- 
+      switch(input$plot_type,
+             "Check this tooltip for info on each plot.",
+             "Spaghetti" = "Things to look for:\\nIndividuals that seem to clearly follow a different trajectory than others in the same group.\\nUse the \\'focus on individual profiles\\' option to find and add them to the QC report",
+             "Median range over time" = "Things to look for:\\nMissing values, note points in the data where variability is low",
+             "Individual plots" = "Things to look for:\\nMissing or abnormal values/outliers",
+             "Covariate distribution" = "Things to look for:\\nWhether the distribution is normal for each covariate, and the values of the central tendencies",
+             "Covariate correlation" = "Things to look for:\\nWhether related values are indeed correlated (e.g., Weight and BMI) and note any other significant correlations",
+             "Nominal vs actual time" = "Things to look for:\\nEnsure that actual and nominal time don\\'t differ too much from each other\\n(i.e., high correlation, majority of differences centered around 0)",
+             "Dosing schedule" = "Things to look for:\\nEnsure that individuals were dosed correctly per their assigned treatment",
+             "Sampling schedule" = "Things to look for:\\nWhether subjects were sampled as detailed in the study protocol(s)"
+      )
+    # update the tooltip
+    runjs(glue("$('#iconic_par').attr('title','{tooltip_title}').tooltip('fixTitle')"))
+  })
   ### Show sampling schedule------------------------------------------
   rv_samp <- reactiveValues(last_id = 0)
   observeEvent(
@@ -1374,6 +1486,7 @@ server <- function(input, output, session) {
       input$plot_type == "Sampling schedule"
     },
     {
+      req(!is.null(dataset()))
       if (is.null(rv_samp$sched) && input$plot_type == "Sampling schedule") {
         req(dataset())
         rv_samp$last_id <- rv_samp$last_id + 1
@@ -1435,6 +1548,7 @@ server <- function(input, output, session) {
       input$plot_type == "Dosing schedule"
     },
     {
+      req(!is.null(dataset()))
       if (is.null(rv_dose$dose) && input$plot_type == "Dosing schedule") {
         rv_dose$last_id <- rv_dose$last_id + 1
         last_id <- rv_dose$last_id
@@ -1494,7 +1608,9 @@ server <- function(input, output, session) {
     {
       dataset()
     },
-    { # Prepare covariate distribution according to type
+    { 
+      req(!is.null(dataset()))
+      # Prepare covariate distribution according to type
       covnames <- append(covInfo(dataset())$COLNAME, catInfo(dataset())$COLNAME)
       covnames <- covnames[!str_detect(covnames, "Baseline_")]
       covnames <- str_replace_all(covnames, "[-| ()]", "_")
@@ -1530,6 +1646,7 @@ server <- function(input, output, session) {
       dataset()
     },
     ({
+      req(!is.null(dataset()))
       output$clean_contents <- renderDataTable( # Render a table showing the cleaned data
         dataset(), # A.k.a the Analysis Dataset
         options = list(
@@ -1576,6 +1693,7 @@ server <- function(input, output, session) {
       )
       # show a summary of continuous covs -------------------------------------------------------------
       sumcov <- reactive({
+        req(!is.null(dataset()))
         xtable <- summaryCov_IQRdataGENERAL(dataset())$xtable
         unique_lengths <-
           sapply(
@@ -2752,7 +2870,10 @@ server <- function(input, output, session) {
       label = "Review reported variables",
       width = "100%",
       style = "margin-bottom: 10px;"
-    )
+    ) %>% 
+      bs_embed_tooltip(title = "Review the reported variables/individuals, add comments if needed, and download the QC Report",
+                       placement = "right", 
+                       trigger = "focus")
   })
   outputOptions(output,"rep_review", suspendWhenHidden = TRUE)
   ### upload and generate QC report ----------------------------------------------------
@@ -2880,9 +3001,11 @@ server <- function(input, output, session) {
   onclick(
     "review_report",
     runjs('
+                  $("#review_report").tooltip("hide")
                   let cookieval = document.cookie.split("; ")[0];
+                  let cookiedef = cookieval.split("=")[0];
                   let cookiename = cookieval.split("=")[1];
-                  if (cookieval.length) {
+                  if (cookiename.length > 0 && cookiedef == "username") {
                     $("#username").val(cookiename);
                     Shiny.setInputValue("username", cookiename);
                   }
