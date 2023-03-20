@@ -397,6 +397,7 @@ server <- function(input, output, session) {
   output_holdover <- reactiveValues()
   
   rv_dat <- reactiveValues(last_id = 0)
+  rv_plot <- reactiveValues(plot   = NULL)
   running <- reactiveVal(FALSE)
   ### Load the dataset into IQRtools, impute and clean if requested------------------------------
   observeEvent(
@@ -477,83 +478,90 @@ server <- function(input, output, session) {
       running(TRUE)
       runjs("$('.shiny-notification-close').remove();")
       runjs("$('.progress-bar').addClass('progress-bar-striped progress-bar-animated');")
-      fut <- future({
-        progress$inc(1 / 22, detail = "Loading dataset into IQRtools...")
-        dataIQR <-
-          withCallingHandlers(
-            IQRdataGENERAL(
-              input = source, # load data as IQRtools object
-              doseNAMES = dosein,
-              obsNAMES = obsin,
-              cov0 = cov_vec,
-              cat0 = cat_vec,
-              covT = dep_con_cov,
-              catT = dep_cat_cov
-            ),
-            message = function(m) {
-              progress$inc(1 / 22, detail = glue::glue("{str_replace(str_trim(m$message),'JID,','JID, \n')}..."))
-            },
-            error = function(e) {
-              progress$inc(20/22, detail = paste0(str_sub(e$message,end = 40),"..."), message = "Error! \n")
-              Sys.sleep(5)
-              progress$inc(1/22, detail = "The QC tab should still work.", message = "Note: \n")
-              Sys.sleep(5)
-              progress$close()
+      fut <- future(
+        globals = c("progress","source","dosein", "obsin", "cov_vec", "cat_vec", "dep_con_cov", "dep_cat_cov",
+                    "impute_flag", "names_of_cov_vec", "clean_flag", "last_id_dat"),
+        packages = c("ipc","magrittr","stringr","ggplot2"),
+        {
+          progress$inc(1 / 22, detail = "Loading dataset into IQRtools...")
+          source("www/IQRcode.R")
+          # get rid of any irrelevant functions to improve performance
+          remove(list = ls() %>% .[str_detect(.,"(?i)model|(?i)mod[^e]|(?i)nlme|(?i)sys|(?i)dataER|(?i)simres|(?i)project|(?i)coxR")])
+          dataIQR <-
+            withCallingHandlers(
+              IQRdataGENERAL(
+                input = source, # load data as IQRtools object
+                doseNAMES = dosein,
+                obsNAMES = obsin,
+                cov0 = cov_vec,
+                cat0 = cat_vec,
+                covT = dep_con_cov,
+                catT = dep_cat_cov
+              ),
+              message = function(m) {
+                progress$inc(1 / 22, detail = glue::glue("{str_replace(str_trim(m$message),'JID,','JID, \n')}..."))
+              },
+              error = function(e) {
+                progress$inc(20/22, detail = paste0(str_sub(e$message,end = 40),"..."), message = "Error! \n")
+                Sys.sleep(5)
+                progress$inc(1/22, detail = "The QC tab should still work.", message = "Note: \n")
+                Sys.sleep(5)
+                progress$close()
+              }
+            )
+          impute_rule <-
+            if (impute_flag == TRUE) {
+              progress$inc(1 / 22, detail = "Imputing covariates...")
+              c(names_of_cov_vec)
             }
-          )
-        impute_rule <-
-          if (impute_flag == TRUE) {
-            progress$inc(1 / 22, detail = "Imputing covariates...")
-            c(names_of_cov_vec)
+          else {
+            progress$inc(1 / 22, detail = NULL)
+            NULL
           }
-        else {
-          progress$inc(1 / 22, detail = NULL)
-          NULL
-        }
-        orig_names <- colnames(dataIQR)
-        colnames(dataIQR) <-
-          colnames(dataIQR) %>%
-          str_replace_all("[-|/ :()]", "_")
-        
-        impute_rule <- impute_rule %>%
-          str_replace_all("[-|/ :()]", "_")
-        
-        imputeIQR <- covImpute_IQRdataGENERAL(
-          data = dataIQR,
-          continuousCovs = impute_rule
-        )
-        
-        if (clean_flag == TRUE) {
-          # clean the data
-          progress$inc(1 / 22, detail = "Cleaning dataset...")
-          cleanIQR <- clean_IQRdataGENERAL(dataIQR,
-                                           FLAGrmIGNOREDrecords = TRUE,
-                                           methodBLLOQ = "M1",
-                                           continuousCovs = impute_rule
+          orig_names <- colnames(dataIQR)
+          colnames(dataIQR) <-
+            colnames(dataIQR) %>%
+            str_replace_all("[-|/ :()]", "_")
+          
+          impute_rule <- impute_rule %>%
+            str_replace_all("[-|/ :()]", "_")
+          
+          imputeIQR <- covImpute_IQRdataGENERAL(
+            data = dataIQR,
+            continuousCovs = impute_rule
           )
-          imputeIQR <- cleanIQR
-        }
-        else {
-          progress$inc(1 / 22, detail = "Finalizing...")
-        }
-        names(imputeIQR) <- orig_names
-        
-        progress$close()
-        list(
-          id = last_id_dat,
-          imputeIQR = imputeIQR,
-          dataIQR = dataIQR,
-          impute_rule = impute_rule
-        )
-      }, seed = T) %...>% (function(result) {
-        enable("generateReport")
-        cli::cat_rule(
-          sprintf("Back from %s", result$id)
-        )
-        output_holdover[["pre_cleaned_data"]] <- result$dataIQR
-        output_holdover[["impute_rule"]] <- result$impute_rule
-        rv_dat$imputeIQR <- result$imputeIQR
-      }) %...!%
+          
+          if (clean_flag == TRUE) {
+            # clean the data
+            progress$inc(1 / 22, detail = "Cleaning dataset...")
+            cleanIQR <- clean_IQRdataGENERAL(dataIQR,
+                                             FLAGrmIGNOREDrecords = TRUE,
+                                             methodBLLOQ = "M1",
+                                             continuousCovs = impute_rule
+            )
+            imputeIQR <- cleanIQR
+          }
+          else {
+            progress$inc(1 / 22, detail = "Finalizing...")
+          }
+          names(imputeIQR) <- orig_names
+          
+          progress$close()
+          list(
+            id = last_id_dat,
+            imputeIQR = imputeIQR,
+            dataIQR = dataIQR,
+            impute_rule = impute_rule
+          )
+        }, seed = T) %...>% (function(result) {
+          enable("generateReport")
+          cli::cat_rule(
+            sprintf("Back from %s", result$id)
+          )
+          output_holdover[["pre_cleaned_data"]] <- result$dataIQR
+          output_holdover[["impute_rule"]] <- result$impute_rule
+          rv_dat$imputeIQR <- result$imputeIQR
+        }) %...!%
         (function(e) {
           warning(e)
         })
@@ -2072,226 +2080,230 @@ server <- function(input, output, session) {
     })
   
   ### Show plot according to choice -------------------------------------------------
+  cur_plot <- reactive({
+    cur_plot <- switch(input$plot_type,
+                       NULL = NULL,
+                       "Spaghetti" = ({ # Stratify by selected Vars.
+                         if (!is.null(input$spagind_choice)) {
+                           if (input$spagind_choice == TRUE) {
+                             if (!is.null(input$page_spagind)) {
+                               ylabel <-  pkpd_data() %>% 
+                                 select(NAME,UNIT) %>%
+                                 unique %>%
+                                 paste(collapse = " (") %>%
+                                 paste0(.,")")
+                               
+                               ggind <- 
+                                 ggplot(
+                                   data = pk_data_rep_by_trt() %>%
+                                     filter(TRTNAME == input$page_spagind),
+                                   mapping = aes(x = TIME, y = LIDV)
+                                 ) + 
+                                 geom_line(
+                                   data = pk_data_rep_by_trt() %>%
+                                     filter(TRTNAME == input$page_spagind),
+                                   aes(group = ID_rep_by_trt),
+                                   size = 1, color = rgb(0.5, 0.5, 0.5), alpha = 0.3
+                                 ) +
+                                 geom_line(
+                                   data = pkpd_data() %>%
+                                     filter(TRTNAME == input$page_spagind),
+                                   aes(group = ID), size = 1
+                                 ) +
+                                 geom_point(
+                                   data = filter(pkpd_data(), CENS == 1, TRTNAME == input$page_spagind),
+                                   color = "red", shape = 8, size = 2
+                                 ) +
+                                 # xgx_scale_x_time_units(
+                                 #   units_dataset = time_units_dataset(),
+                                 #   units_plot = time_units_plot,
+                                 #   breaks = seq(0, max_ticks_mad() + 14, time_ticks_mad()),
+                                 #   limits = c(0, max_ticks_mad() + 14)
+                                 # ) +
+                                 scale_y_log10() +
+                                 xlab("Time (Days)") +
+                                 labs(y = ylabel) +
+                                 scale_x_continuous(guide = guide_axis(check.overlap = TRUE)) +
+                                 facet_wrap(~ `ID` + `TRTNAME Ascending`, ncol = 3) +
+                                 theme(
+                                   legend.position = "none",
+                                   panel.grid.minor.x = ggplot2::element_line(color = rgb(0.9, 0.9, 0.9)),
+                                   panel.grid.minor.y = ggplot2::element_line(color = rgb(0.9, 0.9, 0.9)),
+                                   axis.title.y = element_text(size = 12)
+                                 )
+                               if (input$status_on == TRUE) {
+                                 ggind <- mark_draft(ggind)
+                               }
+                               return(ggind)
+                             }
+                           }
+                           else
+                           {
+                             grid <- marrangeGrob(
+                               grobs = strats(),
+                               nrow = length(strats()),
+                               ncol = 1,
+                               top = NULL
+                             )
+                             return(grid)
+                           }
+                         }
+                       }),
+                       "Individual plots" = ({ # Individual plots per subject
+                         return(ggind())
+                       }),
+                       "Median range over time" = ({
+                         grid <- marrangeGrob(
+                           grobs = range_strats(),
+                           nrow = length(range_strats()),
+                           ncol = 1,
+                           top = NULL
+                         )
+                         return(grid)
+                       }),
+                       "Covariate correlation" = ({
+                         try(silent = T,
+                             switch(input$cor_choiceDist,
+                                    NULL,
+                                    "continuous" = ({
+                                      pdf(tempfile())
+                                      # Remove duplicate variables that are
+                                      ## both time-dependent and independent
+                                      covnames <- covInfo(dataset())$COLNAME
+                                      covnames <- covnames[!str_detect(covnames, "Baseline_")]
+                                      covnames <- str_replace_all(covnames, "[-| ()]", "_")
+                                      
+                                      gg <-
+                                        plotCorCov_IQRdataGENERAL(dataset(),
+                                                                  covNames = covnames,
+                                                                  FLAGreturnObject = TRUE
+                                        )
+                                      dev.off()
+                                      gg <- gg + xlab("") + ylab("")
+                                      return(gg)
+                                    }),
+                                    "categorical" = ({
+                                      pdf(tempfile())
+                                      gg <-
+                                        plotCorCat_IQRdataGENERAL(dataset(),
+                                                                  FLAGreturnObject = TRUE
+                                        )
+                                      dev.off()
+                                      gg <- gg + xlab("") + ylab("")
+                                      return(gg)
+                                    }),
+                                    "both" = ({
+                                      pdf(tempfile())
+                                      covnames <- covInfo(dataset())$COLNAME
+                                      covnames <- covnames[!str_detect(covnames, "Baseline_")]
+                                      covnames <- str_replace_all(covnames, "[-| ()]", "_")
+                                      
+                                      gg <-
+                                        plotCorCovCat_IQRdataGENERAL(dataset(),
+                                                                     covNames = covnames,
+                                                                     FLAGreturnObject = TRUE
+                                        )
+                                      dev.off()
+                                      gg <-
+                                        gg +
+                                        scale_x_discrete(labels = function(string) str_sort(string, numeric = TRUE)) +
+                                        facet_grid(CNAME.y ~ CNAME.x, as.table = TRUE, scales = "free")
+                                      gg <- gg + xlab("") + ylab("")
+                                      return(gg)
+                                    })
+                             )
+                         )
+                       }),
+                       "Nominal vs actual time" = ({
+                         gg <- ggplot(data = dataset(), aes(x = TIME, y = NT)) +
+                           geom_point() +
+                           geom_smooth(method = "lm", color = "black", linetype = 8) +
+                           xlab(paste0("Actual Time (", str_to_title(unique(dataset()$TIMEUNIT)), ")")) +
+                           ylab(paste0(
+                             "Nominal Time (",
+                             str_to_title(unique(dataset()$TIMEUNIT)),
+                             ")"
+                           )) +
+                           annotate("text",
+                                    x = median(dataset()$TIME),
+                                    y = max(dataset()$NT),
+                                    label = paste0(
+                                      "r = ",
+                                      signif(
+                                        x = cor(dataset()$TIME, dataset()$NT),
+                                        digits = 3
+                                      )
+                                    )
+                           )
+                         
+                         gdif <- ggplot(data = dataset(), aes(x = TIME, y = TIME - NT)) +
+                           geom_point() +
+                           xlab(paste0(
+                             "Actual Time (",
+                             str_to_title(unique(dataset()$TIMEUNIT)),
+                             ")"
+                           )) +
+                           ylab(paste0(
+                             "Difference between Actual and Nominal Time (",
+                             str_to_title(unique(dataset()$TIMEUNIT)),
+                             ")"
+                           ))
+                         
+                         ghist <- ggplot(data = dataset(), aes(x = abs(TIME - NT))) +
+                           geom_histogram() +
+                           xlab(paste0(
+                             "Absolute Difference between Actual and Nominal Time (",
+                             str_to_title(unique(dataset()$TIMEUNIT)),
+                             ")"
+                           )) +
+                           ylab("Count")
+                         
+                         if (input$status_on == TRUE) {
+                           gg <- mark_draft(gg)
+                           gdif <- mark_draft(gdif)
+                           ghist <- mark_draft(ghist)
+                         }
+                         
+                         grid <- marrangeGrob(
+                           grobs = list(gg, gdif, ghist),
+                           nrow = 3,
+                           ncol = 1,
+                           top = NULL
+                         )
+                         rv_dat$nomtime <- ggplotify::as.ggplot(grid[[1]])
+                         return(grid)
+                       }),
+                       "Sampling schedule" = ({
+                         return(plot_obj()[input$page_numSamp])
+                       }),
+                       "Dosing schedule" = ({
+                         return(dose_sched_obj()[input$page_numDose])
+                       }),
+                       "Covariate distribution" = ({
+                         if (is.null(input$page_choiceDist)) {
+                           return(NULL)
+                         } else if (input$page_choiceDist == "") {
+                           return(NULL)
+                         } else {
+                           validate(need(dist_obj()[input$page_choiceDist], paste("No",input$page_choiceDist,"defined.")))
+                           return(dist_obj()[input$page_choiceDist])
+                         }
+                       })
+    )
+    return(cur_plot)
+  })
+  
   observe({
     output$dataplot <- renderPlot(
       { # Render a plot according to user's choice
-        if (is.null(input$file_path) || is.null(input$plot_type) || input$plot_type == "") {
+        if (is.null(input$file_path) || is.null(input$plot_type) || input$plot_type == "" || is.null(cur_plot())) {
+          hide("condit_download_bttn")
           return(NULL)
+        } else {
+          rv_plot$title <- input$plot_type
+          show("condit_download_bttn")
+          return(cur_plot())
         }
-        if (input$plot_type == "Sampling schedule") {
-          return(plot_obj()[input$page_numSamp])
-        }
-        if (input$plot_type == "Dosing schedule") {
-          return(dose_sched_obj()[input$page_numDose])
-        }
-        if (input$plot_type == "Covariate distribution") {
-          if (is.null(input$page_choiceDist)) {
-            return(NULL)
-          }
-          else if (input$page_choiceDist == "") {
-            return(NULL)
-          }
-          else {
-            validate(need(dist_obj()[input$page_choiceDist], paste("No",input$page_choiceDist,"defined.")))
-            return(dist_obj()[input$page_choiceDist])
-          }
-        }
-        switch(input$plot_type,
-               NULL = NULL,
-               "Spaghetti" = ({ # Stratify by selected Vars.
-                 if (!is.null(input$spagind_choice)) {
-                   if (input$spagind_choice == TRUE) {
-                     if (!is.null(input$page_spagind)) {
-                       ylabel <-  pkpd_data() %>% 
-                         select(NAME,UNIT) %>%
-                         unique %>%
-                         paste(collapse = " (") %>%
-                         paste0(.,")")
-                       
-                       ggind <- 
-                         ggplot(
-                           data = pk_data_rep_by_trt() %>%
-                             filter(TRTNAME == input$page_spagind),
-                           mapping = aes(x = TIME, y = LIDV)
-                         ) + 
-                         geom_line(
-                           data = pk_data_rep_by_trt() %>%
-                             filter(TRTNAME == input$page_spagind),
-                           aes(group = ID_rep_by_trt),
-                           size = 1, color = rgb(0.5, 0.5, 0.5), alpha = 0.3
-                         ) +
-                         geom_line(
-                           data = pkpd_data() %>%
-                             filter(TRTNAME == input$page_spagind),
-                           aes(group = ID), size = 1
-                         ) +
-                         geom_point(
-                           data = filter(pkpd_data(), CENS == 1, TRTNAME == input$page_spagind),
-                           color = "red", shape = 8, size = 2
-                         ) +
-                         # xgx_scale_x_time_units(
-                         #   units_dataset = time_units_dataset(),
-                         #   units_plot = time_units_plot,
-                         #   breaks = seq(0, max_ticks_mad() + 14, time_ticks_mad()),
-                         #   limits = c(0, max_ticks_mad() + 14)
-                         # ) +
-                         scale_y_log10() +
-                         xlab("Time (Days)") +
-                         labs(y = ylabel) +
-                         scale_x_continuous(guide = guide_axis(check.overlap = TRUE)) +
-                         facet_wrap(~ `ID` + `TRTNAME Ascending`, ncol = 3) +
-                         theme(
-                           legend.position = "none",
-                           panel.grid.minor.x = ggplot2::element_line(color = rgb(0.9, 0.9, 0.9)),
-                           panel.grid.minor.y = ggplot2::element_line(color = rgb(0.9, 0.9, 0.9)),
-                           axis.title.y = element_text(size = 12)
-                         )
-                       
-                       if (input$status_on == TRUE) {
-                         ggind <- mark_draft(ggind)
-                       }
-                       
-                       return(ggind)
-                     }
-                   }
-                   else
-                   {
-                     grid <- marrangeGrob(
-                       grobs = strats(),
-                       nrow = length(strats()),
-                       ncol = 1,
-                       top = NULL
-                     )
-                     
-                     return(grid)
-                   }
-                 }
-               }),
-               "Individual plots" = ({ # Individual plots per subject
-                 return(ggind())
-               }),
-               "Median range over time" = ({
-                 grid <- marrangeGrob(
-                   grobs = range_strats(),
-                   nrow = length(range_strats()),
-                   ncol = 1,
-                   top = NULL
-                 )
-                 return(grid)
-               }),
-               "Covariate correlation" = ({
-                 try(silent = T,
-                     switch(input$cor_choiceDist,
-                            NULL,
-                            "continuous" = ({
-                              pdf(tempfile())
-                              # Remove duplicate variables that are
-                              ## both time-dependent and independent
-                              covnames <- covInfo(dataset())$COLNAME
-                              covnames <- covnames[!str_detect(covnames, "Baseline_")]
-                              covnames <- str_replace_all(covnames, "[-| ()]", "_")
-                              
-                              gg <-
-                                plotCorCov_IQRdataGENERAL(dataset(),
-                                                          covNames = covnames,
-                                                          FLAGreturnObject = TRUE
-                                )
-                              dev.off()
-                              gg <- gg + xlab("") + ylab("")
-                              return(gg)
-                            }),
-                            "categorical" = ({
-                              pdf(tempfile())
-                              gg <-
-                                plotCorCat_IQRdataGENERAL(dataset(),
-                                                          FLAGreturnObject = TRUE
-                                )
-                              dev.off()
-                              gg <- gg + xlab("") + ylab("")
-                              return(gg)
-                            }),
-                            "both" = ({
-                              pdf(tempfile())
-                              covnames <- covInfo(dataset())$COLNAME
-                              covnames <- covnames[!str_detect(covnames, "Baseline_")]
-                              covnames <- str_replace_all(covnames, "[-| ()]", "_")
-                              
-                              gg <-
-                                plotCorCovCat_IQRdataGENERAL(dataset(),
-                                                             covNames = covnames,
-                                                             FLAGreturnObject = TRUE
-                                )
-                              dev.off()
-                              gg <-
-                                gg +
-                                scale_x_discrete(labels = function(string) str_sort(string, numeric = TRUE)) +
-                                facet_grid(CNAME.y ~ CNAME.x, as.table = TRUE, scales = "free")
-                              gg <- gg + xlab("") + ylab("")
-                              return(gg)
-                            })
-                     )
-                 )
-               }),
-               "Nominal vs actual time" = ({
-                 gg <- ggplot(data = dataset(), aes(x = TIME, y = NT)) +
-                   geom_point() +
-                   geom_smooth(method = "lm", color = "black", linetype = 8) +
-                   xlab(paste0("Actual Time (", str_to_title(unique(dataset()$TIMEUNIT)), ")")) +
-                   ylab(paste0(
-                     "Nominal Time (",
-                     str_to_title(unique(dataset()$TIMEUNIT)),
-                     ")"
-                   )) +
-                   annotate("text",
-                            x = median(dataset()$TIME),
-                            y = max(dataset()$NT),
-                            label = paste0(
-                              "r = ",
-                              signif(
-                                x = cor(dataset()$TIME, dataset()$NT),
-                                digits = 3
-                              )
-                            )
-                   )
-                 
-                 gdif <- ggplot(data = dataset(), aes(x = TIME, y = TIME - NT)) +
-                   geom_point() +
-                   xlab(paste0(
-                     "Actual Time (",
-                     str_to_title(unique(dataset()$TIMEUNIT)),
-                     ")"
-                   )) +
-                   ylab(paste0(
-                     "Difference between Actual and Nominal Time (",
-                     str_to_title(unique(dataset()$TIMEUNIT)),
-                     ")"
-                   ))
-                 
-                 ghist <- ggplot(data = dataset(), aes(x = abs(TIME - NT))) +
-                   geom_histogram() +
-                   xlab(paste0(
-                     "Absolute Difference between Actual and Nominal Time (",
-                     str_to_title(unique(dataset()$TIMEUNIT)),
-                     ")"
-                   )) +
-                   ylab("Count")
-                 
-                 if (input$status_on == TRUE) {
-                   gg <- mark_draft(gg)
-                   gdif <- mark_draft(gdif)
-                   ghist <- mark_draft(ghist)
-                 }
-                 
-                 grid <- marrangeGrob(
-                   grobs = list(gg, gdif, ghist),
-                   nrow = 3,
-                   ncol = 1,
-                   top = NULL
-                 )
-                 rv_dat$nomtime <- ggplotify::as.ggplot(grid[[1]])
-                 return(grid)
-               })
-        )
       },
       height = function() {
         # Adjust plot height to fit window and avoid compression
@@ -2368,7 +2380,6 @@ server <- function(input, output, session) {
       }
     ) # End of dataplot
   })
-  
   # Function to detect time-interval between doses ---------------------------------------------------------
   ticks_mad <- function(data) {
     if (length(unique(data$PART)) > 1 || any(str_detect(data$TRTNAME, "q\\dwk"))) {
@@ -2559,9 +2570,7 @@ server <- function(input, output, session) {
   
   output$downloadPlot <- downloadHandler( # Download the current plot presented
     filename = function() {
-      get_name_attrs <- attr_getter("names")
-      curplot <- ggplot2::last_plot()
-      plot_title <- pluck(curplot, get_name_attrs(curplot)[9])$title
+      plot_title <- pluck(ggplot2::last_plot(),"labels")$title
       if (is.null(plot_title)) {
         if (input$tabs == "init_exp") {
           plot_title <- input$plot_type
@@ -2585,17 +2594,18 @@ server <- function(input, output, session) {
       curdate <- Sys.time()
       THEME <- theme_bw() +
         theme(
-          plot.title = element_text(size = 18, hjust = 0.5),
+          plot.title    = element_text(size = 18, hjust = 0.5),
           plot.subtitle = element_text(hjust = 0.5),
-          strip.text.y = element_text(angle = 0),
-          axis.text.x = element_text(size = 14),
-          axis.text.y = element_text(size = 14),
-          axis.title.x = element_text(size = 16),
-          axis.title.y = element_text(size = 16),
-          strip.text.x = element_text(size = 16),
-          legend.title = element_text(size = 16),
-          legend.text = element_text(size = 14),
-          plot.caption = element_text(hjust = 0)
+          # strip.text.x  = element_text(size = 16),
+          # strip.text.y  = element_text(angle = 0),
+          strip.text    = element_blank(),
+          axis.text.x   = element_text(size = 13),
+          axis.text.y   = element_text(size = 13),
+          axis.title.x  = element_text(size = 16),
+          axis.title.y  = element_text(size = 16),
+          legend.title  = element_text(size = 16),
+          legend.text   = element_text(size = 14),
+          plot.caption  = element_text(hjust = 0)
         )
       
       width <- 15
@@ -2607,9 +2617,9 @@ server <- function(input, output, session) {
         if (input$plot_type == "Nominal vs actual time"){
           curplot <- rv_dat$nomtime + 
             labs(caption = paste("Generated", curdate, "EDT"))
-          THEME <- theme(axis.title.x=element_blank(),
-                         axis.text.x=element_blank(),
-                         axis.ticks.x=element_blank(),
+          THEME <- theme(axis.title.x = element_blank(),
+                         axis.text.x  = element_blank(),
+                         axis.ticks.x = element_blank(),
                          plot.caption = element_text(hjust = 0.05, vjust = 5))
           height <- 10
         }
