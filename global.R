@@ -1,13 +1,12 @@
 #start of global.R...
 rm(list = ls(all = TRUE))
-# load libraries
-source("www/load_libs.R")
 library(devtools)
 library(trust)
 library(bvpSolve)
 library(shiny)
 library(pROC)
 library(ggplot2)
+library(bsplus)
 library(DT)
 library(broom)
 library(haven)
