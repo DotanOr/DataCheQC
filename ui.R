@@ -1,3 +1,6 @@
+# load libraries - managed by global.R
+#source("www/load_libs.R")
+
 ui <- dashboardPage(
   skin = "purple",
   dashboardHeader(
@@ -130,8 +133,12 @@ ui <- dashboardPage(
     tags$head(
       tags$link(rel = "shortcut icon", href = "favicon.ico"),
       tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css?family=Lobster"),
+      # enable use of shinyJS, the SweetAlert Shiny Widget, and bslib popovers and tooltips
       useShinyjs(),
       useSweetAlert(),
+      use_bs_popover(),
+      use_bs_tooltip(),
+      # set CSS styles
       tags$style( # To prevent multiple scrollbars in the same window
         HTML("
            .wrapper {
@@ -217,6 +224,11 @@ ui <- dashboardPage(
            .shiny-notification {
            word-break: break-word;
            white-space: pre;
+           }
+           
+           .shiny-notification-error {
+           word-break: break-word;
+           white-space: pre-line;
            }
 
            .sbs-alert {
@@ -328,6 +340,12 @@ ui <- dashboardPage(
              {
                white-space: nowrap;
              }
+             
+            .tooltip-inner 
+            {
+              white-space: break-spaces;
+              max-width: 100%;
+            } 
            ")
       )
     ),
@@ -410,7 +428,18 @@ ui <- dashboardPage(
             condition = "input.file_path != 'null'",
             box(
               width = 12, collapsible = FALSE, collapsed = FALSE,
-              title = "Inspect dataset variables",
+              title = tags$span(
+                "Inspect dataset variables",
+                bs_embed_tooltip(
+                  tag = icon("info-circle") %>%
+                    tagAppendAttributes(
+                      id = "iconic_spec_dat",
+                      style = "font-size:75%; margin-top: 2.8%; padding-left: 1px;"
+                    ),
+                  trigger = "focus",
+                  placement = "right",
+                  title = "Ensure that the dataset matches the specification and look for any missing/N.A. values.\nClick on any row(s) in the table to select and reveal more options about them.")
+              ),
               uiOutput("column_choose"),
               withSpinner(dataTableOutput("data_cols"), type = 5), 
               dataTableOutput("spec_cols")
@@ -436,22 +465,34 @@ ui <- dashboardPage(
                   style = "display: flex; justify-content: flex-end; height: 2.1rem;",
                   uiOutput("report_button")
                 ),
-                disabled(
-                  selectInput(
-                    inputId = "plot_type",
-                    label = "Select plot type to render:",
-                    choices = list(
-                      "Choose plot type" = "", # default empty value
-                      Observations = c("Spaghetti",
-                                       "Median range over time",
-                                       "Individual plots"),
-                      Covariates = c("Covariate distribution",
-                                     "Covariate correlation"),
-                      Timings = c("Nominal vs actual time",
-                                  "Dosing schedule",
-                                  "Sampling schedule")
-                    ),
-                    width = "50%"
+                tags$span(
+                  style = "display: flex;",
+                  disabled(
+                    selectInput(
+                      inputId = "plot_type",
+                      label = "Select plot type to render:",
+                      choices = list(
+                        "Choose plot type" = "", # default empty value
+                        Observations = c("Spaghetti",
+                                         "Median range over time",
+                                         "Individual plots"),
+                        Covariates = c("Covariate distribution",
+                                       "Covariate correlation"),
+                        Timings = c("Nominal vs actual time",
+                                    "Dosing schedule",
+                                    "Sampling schedule")
+                      ),
+                      width = "50%"
+                    )
+                  ),
+                  bs_embed_tooltip(
+                    tag = icon("info-circle") %>%
+                      tagAppendAttributes(id = "iconic_par",
+                                          style = "margin-top: 2.8%; margin-left: 1%; width: 1%; height: 1%"),
+                    placement = "right",
+                    trigger = "focus",
+                    html = "true",
+                    title = "Check this tooltip for info on each plot."
                   )
                 ),
                 conditionalPanel(
@@ -528,7 +569,19 @@ ui <- dashboardPage(
                         width = 12,
                         collpasible = TRUE,
                         collapsed = TRUE,
-                        title = "Analysis dataset",
+                        title = 
+                          tags$span(
+                            "Analysis dataset",
+                            bs_embed_tooltip(
+                              tag = icon("info-circle") %>%
+                                tagAppendAttributes(
+                                  id = "iconic_an_dat",
+                                  style = "font-size:75%; margin-top: 2.8%; padding-left: 1px;"
+                                ),
+                              trigger = "focus",
+                              placement = "right",
+                              title = "Examine the dataset as a whole")
+                          ),
                         withSpinner(
                           type = 5,
                           dataTableOutput("clean_contents")
@@ -542,7 +595,18 @@ ui <- dashboardPage(
                         height = "500px",
                         collpasible = TRUE,
                         collapsed = TRUE,
-                        title = "Duplicated times, unanalyzed dataset",
+                        title = tags$span(
+                          "Duplicated times, unanalyzed dataset",
+                          bs_embed_tooltip(
+                            tag = icon("info-circle") %>%
+                              tagAppendAttributes(
+                                id = "iconic_duptime_dat",
+                                style = "font-size:75%; margin-top: 2.8%; padding-left: 1px;"
+                              ),
+                            trigger = "focus",
+                            placement = "top",
+                            title = "Check whether any observations in the dataset have duplicate timings")
+                        ),
                         withSpinner(dataTableOutput("duplicated_check"), type = 5)
                       )
                     ) %>% tagAppendAttributes(style = "padding-left: 4px; padding-right: 15px;")
@@ -552,7 +616,18 @@ ui <- dashboardPage(
                       width = 12,
                       box(
                         width = 12, collpasible = TRUE, collapsed = TRUE,
-                        title = "Summary of covariates",
+                        title = tags$span(
+                          "Summary of covariates",
+                          bs_embed_tooltip(
+                            tag = icon("info-circle") %>%
+                              tagAppendAttributes(
+                                id = "iconic_sum_cov",
+                                style = "font-size:75%; margin-top: 2.8%; padding-left: 1px;"
+                              ),
+                            trigger = "focus",
+                            placement = "right",
+                            title = "Check the distribution of covariates in the data")
+                        ),
                         withSpinner(dataTableOutput("cat_summary"), type = 5),
                         withSpinner(dataTableOutput("cov_summary"), type = 5)
                       )
@@ -563,7 +638,18 @@ ui <- dashboardPage(
                       width = 12,
                       box(
                         width = 12, collpasible = TRUE, collapsed = TRUE,
-                        title = "Summary of observations",
+                        title = tags$span(
+                          "Summary of observations",
+                          bs_embed_tooltip(
+                            tag = icon("info-circle") %>%
+                              tagAppendAttributes(
+                                id = "iconic_sum_obs",
+                                style = "font-size:75%; margin-top: 2.8%; padding-left: 1px;"
+                              ),
+                            trigger = "focus",
+                            placement = "right",
+                            title = "Check the amount of missing/BLOQ values per study")
+                        ),
                         withSpinner(dataTableOutput("contents"), type = 5)
                       )
                     )
