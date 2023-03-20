@@ -46,3 +46,5 @@ library(ggsci)
 library(promises)
 library(future)
 source("www/IQRcode.R")
+# get rid of any irrelevant functions to improve performance
+remove(list = ls() %>% .[str_detect(.,"(?i)model|(?i)mod[^e]|(?i)nlme|(?i)sys|(?i)dataER|(?i)simres|(?i)project|(?i)coxR")])
