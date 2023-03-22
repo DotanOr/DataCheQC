@@ -885,6 +885,7 @@ server <- function(input, output, session) {
     req(spec_path())
     
     removeNotification(id = "not_enough_tables")
+    removeNotification(id = "not_any_tables")
     removeNotification(id = "err_specification_file")
     removeNotification(id = "err_event_table")
     
@@ -895,13 +896,31 @@ server <- function(input, output, session) {
     if (file_ext(spec_path()) %>% str_detect("docx")) {
       specs <- read_docx(spec_path(), track_changes = "accept")
       tables <- docx_extract_all_tbls(specs)
-      
+      if (length(tables) == 0)
+      {
+        showNotification("No tables detected in specification file", 
+                         type = "error",
+                         id = "not_any_tables",
+                         duration = NULL)
+        return(NULL)
+      }
       names(tables[[1]]) <- names(tables[[1]]) %>% 
         str_replace_all("\\.{3}"," / ") %>% 
         str_replace_all("\\."," ")
     }
     else if (file_ext(spec_path()) %>% str_detect("xlsx")) {
-      tables <- lapply(1:2, function (x) readxl::read_excel(spec_path(), sheet = x) %>% drop_na(NAME))
+      tables <- tryCatch(lapply(1:2, function (x) readxl::read_excel(spec_path(), sheet = x) %>% drop_na(any_of("NAME"))),
+                         error = function(e) {
+                           err_msg <- e$message
+                           if (err_msg == "Can't retrieve sheet in position 2, only 1 sheet(s) found."){
+                             err_msg %<>% paste0(.,"\nMake sure you have two tables, general and event, each in seperate sheets.") 
+                           }
+                           showNotification(paste0("Error in loading the table:\n", err_msg),
+                                            type = "error",
+                                            id   = "not_any_tables",
+                                            duration = NULL)
+                         }
+      )
     }
     
     if (length(tables) != 2){
