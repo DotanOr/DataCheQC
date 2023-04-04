@@ -1,5 +1,8 @@
 ### IQRtools 1.8.0 source code
 #### with some alterations to allow repacking using packrat
+
+# resolve conflicts with package
+if(any(search()=="package:IQRtools")) detach("package:IQRtools", unload = T)
 #'@export
 packageR_IQRtools <- function () {
   info <- list()
@@ -56,13 +59,13 @@ packageR_IQRtools <- function () {
   file <- paste0("IQRtools_",versionIQR)
   url <- paste0("http://iqrtools.intiquan.com/rrepo/src/contrib/IQRtools_",versionIQR,".tar.gz")
   utils::download.file(paste0("http://iqrtools.intiquan.com/rrepo/dll/",file,".dll"),
-                paste0("rrepo/dll/IQRtools_",versionIQR,".dll"),mode = "wb")
+                       paste0("rrepo/dll/IQRtools_",versionIQR,".dll"),mode = "wb")
   utils::download.file(paste0("http://iqrtools.intiquan.com/rrepo/dll/",file,".so"),
-                paste0("rrepo/dll/IQRtools_",versionIQR,".so"),mode = "wb")
+                       paste0("rrepo/dll/IQRtools_",versionIQR,".so"),mode = "wb")
   utils::download.file(paste0("http://iqrtools.intiquan.com/rrepo/dll/",file,".so_mac"),
-                paste0("rrepo/dll/IQRtools_",versionIQR,".so_mac"),mode = "wb")
+                       paste0("rrepo/dll/IQRtools_",versionIQR,".so_mac"),mode = "wb")
   utils::download.file(paste0("http://iqrtools.intiquan.com/rrepo/dll/",file,".so_centos6"),
-                paste0("rrepo/dll/IQRtools_",versionIQR,".so_centos6"),mode = "wb")
+                       paste0("rrepo/dll/IQRtools_",versionIQR,".so_centos6"),mode = "wb")
   oldpath <- getwd()
   setwd("rrepo/src/contrib/")
   tools::write_PACKAGES(".", type="source")
@@ -3394,88 +3397,114 @@ plotCovDistribution_IQRdataGENERAL <- function(data,
                                                FLAGreturnObject=FALSE)
 {
   data__ <- data
-  contInfo0__  <- attr(data__,"covInfo") 
-  catInfo0__ <- attr(data__,"catInfo") 
-  if (!is_IQRdataGENERAL(data__))
+  contInfo0__ <- attr(data__, "covInfo")
+  catInfo0__ <- attr(data__, "catInfo")
+  if (!is_IQRdataGENERAL(data__)) 
     stopIQR("Input argument is not an IQRdataGENERAL object.")
-  if (!class(covNames) %in% c("NULL","character"))
+  if (!class(covNames) %in% c("NULL", "character")) 
     stopIQR("Invalid input argument for 'covNames'. Must be either NULL or character vector of covariate names.")
-  if (!(is.null(filename) | (is.character(filename)) & length(filename) == 1))
+  if (!(is.null(filename) | (is.character(filename)) & length(filename) == 
+        1)) 
     stopIQR("Filename for PDF needs to be character string (no vector).")
   if (is.null(covNames)) {
     covNames__ <- c(contInfo0__$COLNAME, catInfo0__$COLNAME)
-  } else {
+  }
+  else {
     covNames__ <- covNames
-    missingCovNames__ <- setdiff(covNames, c(contInfo0__$COLNAME, catInfo0__$COLNAME))
-    if (length(missingCovNames__) != 0){
-      warningIQR('Following covariate(s) are no covariates in the dataset: ',paste0(missingCovNames__, collapse = ", "))
-      covNames__ <- intersect(covNames__,c(contInfo0__$COLNAME, catInfo0__$COLNAME))
+    missingCovNames__ <- setdiff(covNames, c(contInfo0__$COLNAME, 
+                                             catInfo0__$COLNAME))
+    if (length(missingCovNames__) != 0) {
+      warningIQR("Following covariate(s) are no covariates in the dataset: ", 
+                 paste0(missingCovNames__, collapse = ", "))
+      covNames__ <- intersect(covNames__, c(contInfo0__$COLNAME, 
+                                            catInfo0__$COLNAME))
     }
   }
   data_out <- list()
   env.data_out <- environment()
   contNames__ <- intersect(covNames__, contInfo0__$COLNAME)
   if (length(contNames__) > 0) {
-    obsSCALES__ <- handle_obsScalesIQR(scale, contNames__, default = "linear")
-    logCOV__    <- obsSCALES__[obsSCALES__$scale == "log", "NAME"]
+    obsSCALES__ <- handle_obsScalesIQR(scale, contNames__, 
+                                       default = "linear")
+    logCOV__ <- obsSCALES__[obsSCALES__$scale == "log", 
+                            "NAME"]
     for (k in seq_along(logCOV__)) {
-      if (any(data__[[logCOV__[k]]]<=0, na.rm = TRUE)){
+      if (any(data__[[logCOV__[k]]] <= 0, na.rm = TRUE)) {
         warningIQR("Trying to transform covariate that contains negative values. Left on linear scale.")
-      } else {
+      }
+      else {
         data__[[logCOV__[k]]] <- log(data__[[logCOV__[k]]])
-        contInfo0__$UNIT[contInfo0__$COLNAME == logCOV__[k]] <- paste0("log(",contInfo0__$UNIT[contInfo0__$COLNAME == logCOV__[k]],")")
+        contInfo0__$UNIT[contInfo0__$COLNAME == logCOV__[k]] <- paste0("log(", 
+                                                                       contInfo0__$UNIT[contInfo0__$COLNAME == logCOV__[k]], 
+                                                                       ")")
       }
     }
     idCols__ <- c("USUBJID")
-    data__ <- data__[order(data__$USUBJID,data__$TIME),]
-    contdata__ <- as.data.frame(data__[!duplicated(data__$USUBJID),c(idCols__,contNames__)])
-    contdata.long__ <- tidyr::gather(contdata__,COLNAME,VALUE,-USUBJID)
-    contdata.long__ <- merge(contdata.long__, contInfo0__, all.x=TRUE, all.y = FALSE)
-    contdata.long__$COVlabel <- with(contdata.long__, paste0(COLNAME, "\n", NAME, " (",UNIT, ")"))
-    contdata.long__ <- contdata.long__[!is.na(contdata.long__$VALUE),]
-    nBins__ <- ceiling(min(nrow(contdata__)/5,20))
+    data__ <- data__[order(data__$USUBJID, data__$TIME), 
+    ]
+    contdata__ <- as.data.frame(data__[!duplicated(data__$USUBJID), 
+                                       c(idCols__, contNames__)])
+    contdata.long__ <- tidyr::gather(contdata__, COLNAME, 
+                                     VALUE, -USUBJID)
+    contdata.long__ <- merge(contdata.long__, contInfo0__, 
+                             all.x = TRUE, all.y = FALSE)
+    contdata.long__$COVlabel <- with(contdata.long__, paste0(COLNAME, 
+                                                             "\n", NAME, " (", UNIT, ")"))
+    contdata.long__ <- contdata.long__[!is.na(contdata.long__$VALUE), 
+    ]
+    nBins__ <- ceiling(min(nrow(contdata__)/5, 20))
     data_out[["cont"]] <- contdata.long__
-    grCont__ <- IQRggplot(data=contdata.long__) +
-      geom_histogram(aes_string(x="VALUE"),bins=nBins__) +
-      facet_wrap(~COVlabel,scales="free") +
-      ylab("") + xlab("") +
-      ggtitle(label="Histograms of continuous covariates")
-  } else {
+    grCont__ <- IQRggplot(data = contdata.long__) + geom_histogram(aes_string(x = "VALUE"), 
+                                                                   bins = nBins__) + facet_wrap(~COVlabel, scales = "free") + 
+      ylab("") + xlab("") + ggtitle(label = "Histograms of continuous covariates")
+  }
+  else {
     grCont__ <- NULL
   }
   catNames__ <- intersect(covNames__, catInfo0__$COLNAME)
   if (length(catNames__) > 0) {
     idCols__ <- c("USUBJID")
-    data__ <- data__[order(data__$USUBJID,data__$TIME),]
-    catdata__ <- as.data.frame(data__[!duplicated(data__$USUBJID),c(idCols__,catNames__)])
+    data__ <- data__[order(data__$USUBJID, data__$TIME), 
+    ]
+    # edited from source here
+    catdata__ <- as.data.frame(data__[!duplicated(data__[c("USUBJID",catNames__)]), 
+                                      c(idCols__, catNames__)])
     catInfo0__ <- handle_duplicatedLevels(catInfo0__)
     for (covk__ in catNames__) {
-      catdata__[[covk__]] <- as.character(factor(
-        catdata__[[covk__]],
-        levels = aux_explode(catInfo0__$VALUES[catInfo0__$COLNAME == covk__]),
-        labels = aux_explode(catInfo0__$VALUETXT[catInfo0__$COLNAME == covk__])
-      ))
+      catdata__[[covk__]] <- as.character(factor(catdata__[[covk__]], 
+                                                 levels = aux_explode(catInfo0__$VALUES[catInfo0__$COLNAME == 
+                                                                                          covk__]), labels = aux_explode(catInfo0__$VALUETXT[catInfo0__$COLNAME == 
+                                                                                                                                               covk__])))
     }
-    catdata.long__ <- tidyr::gather(catdata__,COLNAME,VALUE,-USUBJID)
-    catdata.long__ <- merge(catdata.long__, catInfo0__[,c("COLNAME","NAME","UNIT")], all.x=TRUE, all.y = FALSE)
-    catdata.long__$COVlabel <- with(catdata.long__, paste0(COLNAME, "\n", NAME, " (",UNIT, ")"))
+    catdata.long__ <- tidyr::gather(catdata__, COLNAME, 
+                                    VALUE, -USUBJID)
+    catdata.long__ <- merge(catdata.long__, catInfo0__[, 
+                                                       c("COLNAME", "NAME", "UNIT")], all.x = TRUE, all.y = FALSE)
+    catdata.long__$COVlabel <- with(catdata.long__, paste0(COLNAME, 
+                                                           "\n", NAME, " (", UNIT, ")"))
+    # eliminate duplicated rows
+    catdata.long__ <- catdata.long__ %>% group_by(COLNAME, USUBJID) %>% unique
     data_out[["cat"]] <- catdata.long__
-    grCat__ <- IQRggplot(data=catdata.long__) +
-      geom_bar(aes_string(x="VALUE"), stat = "count",
-               orientation = "x", width = 0.8) +
-      facet_wrap(~COVlabel,scales="free") +
-      ylab("") + xlab("") +
-      ggtitle(label="Level counts of categorical covariates") +
+    grCat__ <- IQRggplot(data = catdata.long__) +
+      geom_bar(aes_string(x = "VALUE"), stat = "count", orientation = "x", width = 0.8) + 
+      facet_wrap(~COVlabel, scales = "free", ncol = 1) +
+      ylab("") + 
+      xlab("") +
+      ggtitle(label = "Level counts of categorical covariates") + 
       coord_flip()
-  } else {
+  }
+  else {
     grCat__ <- NULL
   }
   if (!is.null(filename)) {
-    plotList <- list(grCont__,grCat__)
-    IQRoutputPDF(plotList,filename=filename)
-  } else {
-    if (!is.null("grCont__")) print(grCont__)
-    if (!is.null("grCat__")) print(grCat__)
+    plotList <- list(grCont__, grCat__)
+    IQRoutputPDF(plotList, filename = filename)
+  }
+  else {
+    if (!is.null("grCont__")) 
+      print(grCont__)
+    if (!is.null("grCat__")) 
+      print(grCat__)
   }
   if (FLAGreturnObject) {
     out <- list(continuous = grCont__, categorical = grCat__)
@@ -4158,17 +4187,11 @@ summaryObservations_IQRdataGENERAL <- function(data,
   output__
 }
 #'@export
-summaryCat_IQRdataGENERAL <- function(data,
-                                      catNames = NULL,
-                                      stratifyColumns = "STUDY",
-                                      stratifyOrder = NULL,
-                                      FLAGtotal = NULL,
-                                      SIGNIF = 3,
-                                      tableTitle = NULL,
-                                      footerAddText = NULL,
-                                      filename = NULL,
-                                      FLAGpatients = FALSE) {
-  if(!is_IQRdataGENERAL(data)){
+summaryCat_IQRdataGENERAL <- function (data, catNames = NULL, stratifyColumns = "STUDY", 
+                                       stratifyOrder = NULL, FLAGtotal = NULL, SIGNIF = 3, tableTitle = NULL, 
+                                       footerAddText = NULL, filename = NULL, FLAGpatients = FALSE) 
+{
+  if (!is_IQRdataGENERAL(data)) {
     stopIQR("Input argument 'data' is not an IQRdataGENERAL object")
   }
   if (!"STUDY" %in% names(data)) {
@@ -4184,13 +4207,15 @@ summaryCat_IQRdataGENERAL <- function(data,
     return(invisible(NULL))
   }
   if (!all(catNames %in% catNamesData__)) {
-    stopIQR(paste0("The following catNames are not available in the provided data:\n  ",paste0(catNames[!(catNames %in% catNamesData__)],collapse=", ")))
+    stopIQR(paste0("The following catNames are not available in the provided data:\n  ", 
+                   paste0(catNames[!(catNames %in% catNamesData__)], 
+                          collapse = ", ")))
   }
   if (is.null(FLAGtotal)) {
-    FLAGtotal <- rep(FALSE,length(stratifyColumns))
+    FLAGtotal <- rep(FALSE, length(stratifyColumns))
   }
-  if (length(FLAGtotal)==1) {
-    FLAGtotal <- rep(FLAGtotal,length(stratifyColumns))
+  if (length(FLAGtotal) == 1) {
+    FLAGtotal <- rep(FLAGtotal, length(stratifyColumns))
   }
   if (length(FLAGtotal) != length(stratifyColumns)) {
     stopIQR("Missmatch between length of stratifyColumns and FLAGtotal input arguments")
@@ -4203,43 +4228,44 @@ summaryCat_IQRdataGENERAL <- function(data,
     order__ <- unlist(stratifyOrder[k__])
     if (!is.null(order)) {
       if (!all(order__ %in% entries__)) {
-        stopIQR(paste0("Not all entries in stratifyColumns are present for stratification column ",stratifyColumns[k__]))
+        stopIQR(paste0("Not all entries in stratifyColumns are present for stratification column ", 
+                       stratifyColumns[k__]))
       }
     }
   }
   if (is.null(tableTitle)) {
     tableTitle <- "Summary of demographic and baseline characteristics for categorical information"
   }
-  datafirst__ <- as.data.frame(data[!duplicated(data$USUBJID),])
+  datafirst__ <- unique(data[,c("USUBJID",catNames, stratifyColumns)])
   catInfo0__ <- attributes(data)$catInfo
   catInfo__ <- catInfo0__
-  catInfo__ <- catInfo__[catInfo__$COLNAME %in% catNames,]
+  catInfo__ <- catInfo__[catInfo__$COLNAME %in% catNames, 
+  ]
   FLAGmissingVal <- FALSE
   for (icat__ in catNames) {
     if (any(is.na(datafirst__[[icat__]]))) {
-      tmp__ <- catInfo__[catInfo__$COLNAME == icat__,]
-      tmpValImpute__ <- max(as.numeric(aux_explode(tmp__$VALUES)))+1
+      tmp__ <- catInfo__[catInfo__$COLNAME == icat__, 
+      ]
+      tmpValImpute__ <- max(as.numeric(aux_explode(tmp__$VALUES))) + 
+        1
       tmp__$VALUES <- paste0(tmp__$VALUES, ",", tmpValImpute__)
       tmp__$VALUETXT <- paste0(tmp__$VALUETXT, ",n.a.**")
-      catInfo__[catInfo__$COLNAME == icat__,] <- tmp__
+      catInfo__[catInfo__$COLNAME == icat__, ] <- tmp__
       datafirst__[[icat__]][is.na(datafirst__[[icat__]])] <- as.character(tmpValImpute__)
       FLAGmissingVal <- TRUE
     }
   }
-  baseTable__ <- do.call(rbind,lapply(1:nrow(catInfo__), function (kRowCatInfo__) {
-    row__ <- catInfo__[kRowCatInfo__,]
-    characteristic__ <- row__$NAME
-    colname__ <- row__$COLNAME
-    categories__ <- aux_explodePC(row__$VALUETXT)
-    values__ <- aux_explodePC(row__$VALUES)
-    subtable__ <- data.frame(
-      Characteristic = characteristic__,
-      Category = categories__,
-      COLNAME = colname__,
-      VALUE = values__,
-      stringsAsFactors=FALSE
-    )
-  }))
+  baseTable__ <- do.call(rbind, lapply(1:nrow(catInfo__), 
+                                       function(kRowCatInfo__) {
+                                         row__ <- catInfo__[kRowCatInfo__, ]
+                                         characteristic__ <- row__$NAME
+                                         colname__ <- row__$COLNAME
+                                         categories__ <- aux_explodePC(row__$VALUETXT)
+                                         values__ <- aux_explodePC(row__$VALUES)
+                                         subtable__ <- data.frame(Characteristic = characteristic__, 
+                                                                  Category = categories__, COLNAME = colname__, 
+                                                                  VALUE = values__, stringsAsFactors = FALSE)
+                                       }))
   table__ <- baseTable__
   table__$COLNAME <- NULL
   table__$VALUE <- NULL
@@ -4250,29 +4276,39 @@ summaryCat_IQRdataGENERAL <- function(data,
     stratifyOrder__ <- unlist(stratifyOrder[kstratcolumn__])
     datafirst__$stratifyColumn__ <- datafirst__[[stratifyColumn__]]
     if (stratifyColumn__ %in% catInfo0__$COLNAME) {
-      tmpVal__ <- aux_explode(catInfo0__$VALUES[catInfo0__$COLNAME == stratifyColumn__])
-      tmpTxt__ <- aux_explode(catInfo0__$VALUETXT[catInfo0__$COLNAME == stratifyColumn__])
-      if (!is.null(stratifyOrder__)) stratifyOrder__ <- as.character(factor(stratifyOrder__, levels = tmpVal__, labels = tmpTxt__))
-      datafirst__$stratifyColumn__ <- as.character(factor(datafirst__$stratifyColumn__, levels = tmpVal__, labels = tmpTxt__))
+      tmpVal__ <- aux_explode(catInfo0__$VALUES[catInfo0__$COLNAME == 
+                                                  stratifyColumn__])
+      tmpTxt__ <- aux_explode(catInfo0__$VALUETXT[catInfo0__$COLNAME == 
+                                                    stratifyColumn__])
+      if (!is.null(stratifyOrder__)) 
+        stratifyOrder__ <- as.character(factor(stratifyOrder__, 
+                                               levels = tmpVal__, labels = tmpTxt__))
+      datafirst__$stratifyColumn__ <- as.character(factor(datafirst__$stratifyColumn__, 
+                                                          levels = tmpVal__, labels = tmpTxt__))
     }
-    if (is.null(stratifyOrder__))
+    if (is.null(stratifyOrder__)) 
       stratifyOrder__ <- unique(datafirst__$stratifyColumn__[!is.na(datafirst__$stratifyColumn__)])
-    if (any(is.na(datafirst__$stratifyColumn__)))
+    if (any(is.na(datafirst__$stratifyColumn__))) 
       stratifyOrder__ <- c(stratifyOrder__, NA)
     stratifyOrder__[is.na(stratifyOrder__)] <- "missing*"
     datafirst__$stratifyColumn__[is.na(datafirst__$stratifyColumn__)] <- "missing*"
-    if ("missing*" %in% stratifyOrder__) FLAGmissingCat <- TRUE
-    dummy__ <- sapply(stratifyOrder__, function (strata__) {
-      stratData__ <- datafirst__[datafirst__$stratifyColumn__ == strata__,]
-      NTOTALstrat__ <- nrow(stratData__)
-      STRATCOLname__ <- paste0(stratData__$stratifyColumn__[1]," [N=",NTOTALstrat__,"]")
-      stratValueCol__ <- sapply(1:nrow(baseTable__), function (kRowTable__) {
-        row__ <- baseTable__[kRowTable__,]
+    if ("missing*" %in% stratifyOrder__) 
+      FLAGmissingCat <- TRUE
+    dummy__ <- sapply(stratifyOrder__, function(strata__) {
+      stratData__ <- datafirst__[datafirst__$stratifyColumn__ == 
+                                   strata__, ]
+      NTOTALstrat__ <- length(unique(stratData__[,"USUBJID"]))
+      STRATCOLname__ <- paste0(stratData__$stratifyColumn__[1], 
+                               " [N=", NTOTALstrat__, "]")
+      stratValueCol__ <- sapply(1:nrow(baseTable__), function(kRowTable__) {
+        row__ <- baseTable__[kRowTable__, ]
         COLNAME__ <- row__$COLNAME
         VALUE__ <- row__$VALUE
-        NCATstraty__ <- sum(stratData__[COLNAME__] == VALUE__,na.rm=TRUE)
-        PERCCATstraty__ <- signif(NCATstraty__/NTOTALstrat__*100,SIGNIF)
-        paste0(NCATstraty__, " (",PERCCATstraty__,"%)")
+        NCATstraty__ <- length(stratData__[stratData__[[COLNAME__]]==VALUE__ & !duplicated.array(stratData__[,c(COLNAME__,"USUBJID")]),"USUBJID"])
+        PERCCATstraty__ <- signif(NCATstraty__/NTOTALstrat__ * 
+                                    100, SIGNIF)
+        paste0(NCATstraty__, " (", PERCCATstraty__, 
+               "%)")
       })
       table__ <<- cbind(table__, stratValueCol__)
       names(table__)[ncol(table__)] <<- STRATCOLname__
@@ -4280,42 +4316,49 @@ summaryCat_IQRdataGENERAL <- function(data,
     if (FLAGtotal__) {
       dataTOTAL__ <- datafirst__
       NTOTAL__ <- nrow(dataTOTAL__)
-      totalValueCol__ <- sapply(1:nrow(baseTable__), function (kRowTable__) {
-        row__ <- baseTable__[kRowTable__,]
+      totalValueCol__ <- sapply(1:nrow(baseTable__), function(kRowTable__) {
+        row__ <- baseTable__[kRowTable__, ]
         COLNAME__ <- row__$COLNAME
         VALUE__ <- row__$VALUE
-        NCAT__ <- sum(dataTOTAL__[COLNAME__] == VALUE__,na.rm=TRUE)
-        PERCCAT__ <- signif(NCAT__/NTOTAL__*100,SIGNIF)
-        paste0(NCAT__, " (",PERCCAT__,"%)")
+        NCAT__ <- sum(dataTOTAL__[COLNAME__] == VALUE__, 
+                      na.rm = TRUE)
+        PERCCAT__ <- signif(NCAT__/NTOTAL__ * 100, SIGNIF)
+        paste0(NCAT__, " (", PERCCAT__, "%)")
       })
       table__ <- cbind(table__, totalValueCol__)
-      names(table__)[ncol(table__)] <- paste0("TOTAL [N=",NTOTAL__,"]")
+      names(table__)[ncol(table__)] <- paste0("TOTAL [N=", 
+                                              NTOTAL__, "]")
     }
-  } 
+  }
   table__$Characteristic[duplicated(table__$Characteristic)] = " "
   if (!is.null(filename)) {
     report__ <- TRUE
-  } else {
+  }
+  else {
     report__ <- FALSE
   }
   if (FLAGpatients) {
     footer__ <- "N: Number of patients<br>Number of patients in each category and percentage within this category"
-  } else {
+  }
+  else {
     footer__ <- "N: Number of subjects<br>Number of subjects in each category and percentage within this category"
   }
-  if (FLAGmissingCat)
-    footer__ <- paste0(footer__, "<br>","* stratification value missing in dataset")
-  if (FLAGmissingVal)
-    footer__ <- paste0(footer__, "<br>","** missing values in dataset")
+  if (FLAGmissingCat) 
+    footer__ <- paste0(footer__, "<br>", "* stratification value missing in dataset")
+  if (FLAGmissingVal) 
+    footer__ <- paste0(footer__, "<br>", "** missing values in dataset")
   if (!is.null(footerAddText)) {
-    footer__ <- paste0(footer__,"<br>",footerAddText)
+    footer__ <- paste0(footer__, "<br>", footerAddText)
   }
   if (!is.null(filename)) {
-    filename <- paste0(aux_strrep(filename,".txt",""),".txt")
-    IQRoutputTable(xtable=table__,xfooter=footer__,xtitle=tableTitle,report=report__,filename=filename)
+    filename <- paste0(aux_strrep(filename, ".txt", ""), 
+                       ".txt")
+    IQRoutputTable(xtable = table__, xfooter = footer__, 
+                   xtitle = tableTitle, report = report__, filename = filename)
     return(invisible(NULL))
   }
-  output__ <- IQRoutputTable(xtable=table__,xfooter=footer__,xtitle=tableTitle,report=report__)
+  output__ <- IQRoutputTable(xtable = table__, xfooter = footer__, 
+                             xtitle = tableTitle, report = report__)
   output__
 }
 #'@export
@@ -5769,6 +5812,8 @@ IQRdataGENERAL <- function(input,
     output <- output[output$NAME %in% c(doseNAMES,obsNAMES),]
   }
   check_IQRdataGENERAL(output)
+  data.table::setDF(output)
+  attr(output,"class") <- c("IQRdataGENERAL", attr(output,"class"))
   return(output)
 }
 #'@export
@@ -5869,6 +5914,8 @@ check_IQRdataGENERAL <- function(data,FLAGreturnText=FALSE) {
         checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('NAME LEVEL (%s): Sometimes VALUE and sometimes VALUETXT defined. Define either one for each NAME or both\n',x$NAME[1]))
     }
   })
+  
+  data.table::setDT(data)
   dataTemp <- data[!is.na(data$VALUE) & !is.na(data$VALUETXT),]
   dummy <- lapply(split(dataTemp,dataTemp$NAME), function (x) {
     values_txt <- unique(x$VALUETXT)
@@ -5878,54 +5925,64 @@ check_IQRdataGENERAL <- function(data,FLAGreturnText=FALSE) {
         checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('NAME LEVEL (%s): Used values for VALUE and VALUETXT do not match\n',x$NAME[1]))
     })
   })
-  dummy <- lapply(split(data,data$USUBJID),function (x) {
-    lapply(split(x, x$ADM), function (y) {
-      y$ADM[is.na(y$ADM)] <- 0
-      if (y$ADM[1] > 0) {
-        if (length(y$TIME) != length(unique(y$TIME)))
-          checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Subject has DOSE record of ADM "%d" at same TIME points\n',y$USUBJID[1],y$ADM[1]))
-      }
-    })
-    lapply(split(x, x$NAME), function (y) {
-      if (length(y$TIME) != length(unique(y$TIME)))
-        checkInfoText_MINOR <<- paste0(checkInfoText_MINOR,sprintf('SUBJECT LEVEL (%s): Subject has records of NAME "%s" at same TIME points\n',y$USUBJID[1],y$NAME[1]))
-      if (length(unique(y$LLOQ))>1)
-        checkInfoText_MINOR <<- paste0(checkInfoText_MINOR,sprintf('SUBJECT LEVEL (%s): Subject has different LLOQ for NAME "%s"\n',y$USUBJID[1],y$NAME[1]))
-      if (length(unique(y$ULOQ))>1) {
-        checkInfoText_MINOR <<- paste0(checkInfoText_MINOR,sprintf('SUBJECT LEVEL (%s): Subject has different ULOQ for NAME "%s"\n',y$USUBJID[1],y$NAME[1]))
-      }
-    })
-    if (sum(diff(x$TIME)<0,na.rm=TRUE))
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): TIME not monotonously non-decreasing\n',x$USUBJID[1]))
-    if (length(unique(x$CENTER))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for CENTER present\n',x$USUBJID[1]))
-    if (length(unique(x$SUBJECT))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for SUBJECT present\n',x$USUBJID[1]))
-    if (length(unique(x$INDNAME))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for INDNAME present\n',x$USUBJID[1]))
-    if (length(unique(x$IND))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for IND present\n',x$USUBJID[1]))
-    if (length(unique(x$COMPOUND))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for COMPOUND present\n',x$USUBJID[1]))
-    if (length(unique(x$STUDY))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for STUDY present\n',x$USUBJID[1]))
-    if (length(unique(x$STUDYN))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for STUDYN present\n',x$USUBJID[1]))
-    if (length(unique(x$STUDYDES))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for STUDYDES present\n',x$USUBJID[1]))
-    if (length(unique(x$PART))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for PART present\n',x$USUBJID[1]))
-    if (length(unique(x$EXTENS))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for EXTENS present\n',x$USUBJID[1]))
-    if (length(unique(x$TRTNAME))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for TRTNAME present\n',x$USUBJID[1]))
-    if (length(unique(x$TRT))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for TRT present\n',x$USUBJID[1]))
-    if (length(unique(x$TRTNAMER))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for TRTNAMER present\n',x$USUBJID[1]))
-    if (length(unique(x$TRTR))>1)
-      checkInfoText_ERROR <<- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Multiple different entries for TRTR present\n',x$USUBJID[1]))
-  })
+  
+  dummy <- data[is.na(ADM),ADM := 0,
+                by = .(USUBJID,ADM)][,
+                                     .(Test_ADM = ADM > 0 & length(TIME) != length(unique(TIME))), 
+                                     by = .(USUBJID,ADM)]
+  
+  if (dummy[,any(Test_ADM)]){
+    checkInfoText_ERROR <- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): Subject has DOSE record of ADM "%d" at same TIME points\n',dummy[(Test_ADM),USUBJID],dummy[(Test_ADM),ADM]))
+  }
+  
+  dummy <- data[,.(Test_Time = length(TIME) != length(unique(TIME)),
+                   Test_LLOQ = length(unique(LLOQ)) > 1,
+                   Test_ULOQ = length(unique(ULOQ)) > 1
+  ),
+  by = .(USUBJID,NAME)]
+  
+  if (dummy[,any(Test_Time)]){
+    checkInfoText_MINOR <- paste0(checkInfoText_MINOR,sprintf('SUBJECT LEVEL (%s): Subject has records of NAME "%s" at same TIME points\n',dummy[(Test_Time),USUBJID],dummy[(Test_Time),NAME]))
+  }
+  if (dummy[,any(Test_LLOQ)]){
+    checkInfoText_MINOR <- paste0(checkInfoText_MINOR,sprintf('SUBJECT LEVEL (%s): Subject has different LLOQ for NAME "%s"\n',dummy[(Test_LLOQ),USUBJID],dummy[(Test_LLOQ),NAME]))
+  }
+  if (dummy[,any(Test_ULOQ)]){
+    checkInfoText_MINOR <- paste0(checkInfoText_MINOR,sprintf('SUBJECT LEVEL (%s): Subject has different ULOQ for NAME "%s"\n',dummy[(Test_ULOQ),USUBJID],dummy[(Test_ULOQ),NAME]))
+  }
+  
+  dummy <- data[,.(
+    Test_Time2 = sum(diff(TIME) < 0, na.rm=TRUE)
+  ), by = USUBJID]
+  
+  if (dummy[,any(Test_Time2)]){
+    checkInfoText_ERROR <- paste0(checkInfoText_ERROR,sprintf('SUBJECT LEVEL (%s): TIME not monotonously non-decreasing\n',dummy[(Test_Time2),USUBJID]))
+  }
+  
+  # check these columns
+  col_list <- list("CENTER","SUBJECT","INDNAME","COMPOUND",
+                   "STUDY","STUDYN","STUDYDES", 
+                   "PART","EXTENS",
+                   "TRTNAME","TRTNAMER","TRT","TRTR")
+  # but only those that actually exist in the data
+  col_list <- intersect(col_list, names(data))
+  names(col_list) <- col_list 
+  
+  # for each column in the list, check if it has more than one unique value (per USUBJID)
+  data[,lapply(.SD,function(x){ dplyr::if_else(length(unique(x)) > 1, T, F) }),
+       .SDcols = col_list, 
+       by = USUBJID][
+         # filter so that we have any subjects that meet the condition for any column
+         (eval(parse(text = paste(col_list,collapse = "|"))))] %>%
+    # pivot the table to name-value pairs per USUBJID
+    data.table::melt(id.vars = "USUBJID") %>%
+    # for any column that has more than one unique value per subject, add to the error message
+    .[(value),
+      .(checkInfoText_ERROR <- paste0(checkInfoText_ERROR, sprintf('SUBJECT LEVEL (%s): Multiple different entries for %s present\n',USUBJID,variable)))]
+  # combine all the errors and minor messages from vectors to one string each
+  checkInfoText_ERROR <- paste0(checkInfoText_ERROR, collapse = "")
+  checkInfoText_MINOR <- paste0(checkInfoText_MINOR, collapse = "")
+  data.table::setDF(data)
   if (FLAGreturnText) {
     output <- list(
       checkInfoText_MINOR = checkInfoText_MINOR,
@@ -5956,6 +6013,8 @@ check_IQRdataGENERAL <- function(data,FLAGreturnText=FALSE) {
   if (nchar(checkInfoText_ERROR)) warningIQR("check_IQRdataGENERAL: Errors present in general dataset - please check messages above")
   cat("\n\n")
 }
+
+#'@export 
 generalDataHandleMissingColums <- function(data) {
   if (!("IXGDF" %in% names(data))) {
     data$IXGDF <- as.numeric(1:nrow(data))
@@ -6303,6 +6362,7 @@ generalData_YTYPEcolumn <- function(data,obsNAMES,FLAGforceOverwriteNLMEcols) {
   }
   return(data)
 }
+
 generalDataTimeIndependentCovariates <- function (data,cov0,cat0) {
   x__ <- setdiff(unlist(cov0),unique(data$NAME))
   if (length(x__) > 0) {
@@ -6335,46 +6395,57 @@ generalDataTimeIndependentCovariates <- function (data,cov0,cat0) {
                    paste0(x__,collapse=",")))
   }
   covariateInfo0 <- c(cov0,cat0)
+  
+  # edited from source to improve performance
+  # Define conditions as quoted expressions
+  cond1 <- quote(NAME == covNAME__ & BASE != 0)
+  cond2 <- quote(NAME == covNAME__ & SCREEN != 0)
+  cond3 <- quote(NAME == covNAME__ & TIME <= 0)
+  
+  # Convert data.frame to data.table
+  data.table::setDT(data)
+  
+  # Iterate on each time-independent covariate (cov0,cat0)
+  # Iterate over each time-independent covariate (cov0,cat0)
   for (k__ in seq_along(covariateInfo0)) {
+    
+    # Get the covariate name and column name
     colName__ <- names(covariateInfo0)[k__]
     covNAME__ <- covariateInfo0[[k__]]
-    data[[colName__]] <- NA
-    data <- do.call(rbind,lapply(split(data,data$USUBJID), function(x) {
-      y <- subset(x,x$NAME==covNAME__ & x$BASE!=0)
-      if (nrow(y)==0) {
-        z <- NA
+    
+    # Create a new column for the current covariate
+    data[, (colName__) := NA_real_]
+    
+    # Apply conditions sequentially to each group of USUBJID
+    data[, (colName__) := {
+      y <- .SD[NAME == covNAME__ & BASE != 0]
+      if (nrow(y) == 0) {
+        z <- NA_real_
       } else {
         z <- mean(y$VALUE)
       }
-      x[[colName__]] <- z
-      x
-    }))
-    data <- do.call(rbind,lapply(split(data,data$USUBJID), function(x) {
-      if (is.na(x[[colName__]][1])) {
-        y <- subset(x,x$NAME==covNAME__ & x$SCREEN!=0)
-        if (nrow(y)==0) {
-          z <- NA
+      if (is.na(z)) {
+        y <- .SD[NAME == covNAME__ & SCREEN != 0]
+        if (nrow(y) == 0) {
+          z <- NA_real_
         } else {
           z <- mean(y$VALUE)
         }
-        x[[colName__]] <- z
-      }
-      x
-    }))
-    data <- do.call(rbind,lapply(split(data,data$USUBJID), function(x) {
-      if (is.na(x[[colName__]][1])) {
-        y <- subset(x,x$NAME==covNAME__ & x$TIME<=0)
-        if (nrow(y)==0) {
-          z <- NA
-        } else {
-          z <- mean(y$VALUE)
+        if (is.na(z)) {
+          y <- .SD[NAME == covNAME__ & TIME <= 0]
+          if (nrow(y) == 0) {
+            z <- NA_real_
+          } else {
+            z <- mean(y$VALUE)
+          }
         }
-        x[[colName__]] <- z
       }
-      x
-    }))
+      z
+    }, by = USUBJID]
   }
   rownames(data) <- NULL
+  data.table::setDF(data)
+  attr(data,"class") <- c("IQRdataGENERAL", attr(data,"class"))
   return(data)
 }
 generalDataTimeDependentCovariates <- function (data,covT,catT,FLAGnoNAlocf) {
@@ -7695,7 +7766,7 @@ IQRsysEst <- function(model, dosing, data,
                       ...) {
   if (!is.null(modelSpec$COVcentering))
     warningIQR(paste0("Custom centering values are not yet implemented in IQRtools SYSFIT functionality.",
-                   "Default reference values generated from the data will be used.", collapse = "\n"))
+                      "Default reference values generated from the data will be used.", collapse = "\n"))
   parameter_fields__ <- setNames(nm = c("POPvalues0", "POPestimate", "IIVdistribution", "IIVvalues0", "IIVestimate"))
   if (!all(parameter_fields__ %in% names(modelSpec))) {
     stopIQR("For the definition of modelSpec argument please use the modelSpec_IQRsysEst() function")
@@ -7799,8 +7870,8 @@ modelSpec_IQRsysEst <- function (
     additional__ <- setdiff(names(y__), names(x__))
     if (length(additional__) > 0) {
       warningIQR("Found the following elements in ", whoCalls__,
-              " which are disregarded because they are not present in POPvalues0: ",
-              paste(additional__, collapse = ", "))
+                 " which are disregarded because they are not present in POPvalues0: ",
+                 paste(additional__, collapse = ", "))
     }
     c(y__, x__)[names(x__)]
   }
@@ -7836,8 +7907,8 @@ modelSpec_IQRsysEst <- function (
   parameters__ <- union(names(LOCmodel), names(LOCvalues0))
   if (!all(parameters__ %in% names(POPvalues0)))
     warningIQR("The following parameters listed in LOCmodel or LOCvalues0 ",
-            "were not defined in POPvalues0 and were discarded: ",
-            paste(setdiff(parameters__, names(POPvalues0)), collapse = ", "))
+               "were not defined in POPvalues0 and were discarded: ",
+               paste(setdiff(parameters__, names(POPvalues0)), collapse = ", "))
   parameters <- intersect(parameters__, names(POPvalues0))
   names(parameters__) <- parameters__
   modelSpec__$LOCmodel <- lapply(parameters__, function(n__) {
@@ -7869,9 +7940,9 @@ dMod_build_indiv_grids <- function(myNlmeEst__, my_dMod_data, basic_dMod_model__
   est.vec <- NULL
   for(mycatname__ in myNlmeEst__$data$catNames) {
     fixed.grid__ <- dMod_expand_cat(fixed.grid__,
-                                  mycatname__,
-                                  myNlmeEst__$data$catValues[[mycatname__]],
-                                  myNlmeEst__$data$covariateCATreference[[mycatname__]])
+                                    mycatname__,
+                                    myNlmeEst__$data$catValues[[mycatname__]],
+                                    myNlmeEst__$data$covariateCATreference[[mycatname__]])
   }
   cov_trafo__ <- dMod_build_covcat_trafo(myNlmeEst__)
   if (!is.null(attr(cov_trafo__, "fixed")))
@@ -7972,7 +8043,7 @@ dMod_build_nlme_trafo <- function(myNlmeEst__, IDs, basic_dMod_model__) {
   trafo__ <- repar("x ~ exp(x)",            x = getSymbols(errorModel), trafo = trafo__)
   if (any(parameters__[["IIVestimate"]] > 0)) {
     trafo__ <- repar(expr = "x ~ (x + ETA_x)", trafo = trafo__,
-                           x = names(parameters__[["IIVvalues0"]])[parameters__[["IIVestimate"]] > 0])
+                     x = names(parameters__[["IIVvalues0"]])[parameters__[["IIVestimate"]] > 0])
   }
   return(trafo__)
 }
@@ -8321,8 +8392,8 @@ profile_IQRsysModel <- function(sysModel, parameters = NULL, limits = NULL, fixe
   setwd(dllfolder__)
   profiles__ <- try(
     suppressMessages(profile(obj = obj__, pars = pars__, whichPar = parameters,
-                                   alpha = alpha, limits = limits, cores = ncores,
-                                   fixed = c(fixed_on_lower__, fixed_on_upper__, fixed_by_user__), ...)), silent = TRUE)
+                             alpha = alpha, limits = limits, cores = ncores,
+                             fixed = c(fixed_on_lower__, fixed_on_upper__, fixed_by_user__), ...)), silent = TRUE)
   setwd(mywd__)
   if (inherits(profiles__, "try-error")) {
     warningIQR("Profiles could not be computed. SysModel is returned without any changes.")
@@ -8440,25 +8511,25 @@ plot_IQRsysModel <- function(sysModel, time = NULL, log = NULL,
   dataOutputIX__ <- unique(sort(dataOrig__$YTYPE))
   dataOutputIX__ <- dataOutputIX__[!is.na(dataOutputIX__)]
   if (length(outputIX__) > 0 & length(dataOutputIX__) > 0) {
-      if (!"UNIT" %in% names(dataOrig__)) dataOrig__$UNIT <- "NA"
-      outputInfo__ <- unique(dataOrig__[dataOrig__$YTYPE %in% outputIX__,c("NAME","UNIT","YTYPE")])
-      outputInfo__$OUTPUT <- paste0("OUTPUT",outputInfo__$YTYPE)
-      outputInfo__$TEXT <- gsub(":::"," ",paste0(outputInfo__$NAME," [",outputInfo__$UNIT,"]\n(",outputInfo__$OUTPUT,")"))
-      d__$name <- as.character(d__$name)
-      for (k in 1:nrow(outputInfo__)) {
-        d__$name[d__$name==outputInfo__$OUTPUT[k]] <- outputInfo__$TEXT[k]
-      }
-      data__$name <- as.character(data__$name)
-      for (k in 1:nrow(outputInfo__)) {
-        data__$name[data__$name==outputInfo__$OUTPUT[k]] <- outputInfo__$TEXT[k]
-      }
-      prediction__$name <- as.character(prediction__$name)
-      for (k in 1:nrow(outputInfo__)) {
-        prediction__$name[prediction__$name==outputInfo__$OUTPUT[k]] <- outputInfo__$TEXT[k]
-      }
-      d__$CONDITION <- gsub(":::"," ",d__$CONDITION)
-      data__$CONDITION <- gsub(":::"," ",data__$CONDITION)
-      prediction__$CONDITION <- gsub(":::"," ",prediction__$CONDITION)
+    if (!"UNIT" %in% names(dataOrig__)) dataOrig__$UNIT <- "NA"
+    outputInfo__ <- unique(dataOrig__[dataOrig__$YTYPE %in% outputIX__,c("NAME","UNIT","YTYPE")])
+    outputInfo__$OUTPUT <- paste0("OUTPUT",outputInfo__$YTYPE)
+    outputInfo__$TEXT <- gsub(":::"," ",paste0(outputInfo__$NAME," [",outputInfo__$UNIT,"]\n(",outputInfo__$OUTPUT,")"))
+    d__$name <- as.character(d__$name)
+    for (k in 1:nrow(outputInfo__)) {
+      d__$name[d__$name==outputInfo__$OUTPUT[k]] <- outputInfo__$TEXT[k]
+    }
+    data__$name <- as.character(data__$name)
+    for (k in 1:nrow(outputInfo__)) {
+      data__$name[data__$name==outputInfo__$OUTPUT[k]] <- outputInfo__$TEXT[k]
+    }
+    prediction__$name <- as.character(prediction__$name)
+    for (k in 1:nrow(outputInfo__)) {
+      prediction__$name[prediction__$name==outputInfo__$OUTPUT[k]] <- outputInfo__$TEXT[k]
+    }
+    d__$CONDITION <- gsub(":::"," ",d__$CONDITION)
+    data__$CONDITION <- gsub(":::"," ",data__$CONDITION)
+    prediction__$CONDITION <- gsub(":::"," ",prediction__$CONDITION)
   }
   if (!"TIMEUNIT" %in% names(dataOrig__)) {
     xlab <- "Time"
@@ -8858,7 +8929,7 @@ plotPred_IQRsysModel <- function(sysModel, tol = 0.1, states = NULL, conditions 
 plotFit_IQRsysModel <- function(res, OUTPUT = 1) {
   if (is.null(res[["parframes"]][[1]])) {
     warningIQR("The IQRsysModel object did not contain estimation information.",
-            "The plot shows the data and prediction as they were found in the object.")
+               "The plot shows the data and prediction as they were found in the object.")
   }
   prediction__ <- res[["prediction"]][[1]]
   datalist__ <- res[["data"]][[1]]
@@ -8968,7 +9039,7 @@ plotFit_IQRsysModel <- function(res, OUTPUT = 1) {
 plotWRES_IQRsysModel <- function(res, OUTPUT = 1) {
   if (is.null(res[["parframes"]][[1]])) {
     warningIQR("The IQRsysModel object did not contain estimation information.",
-            "The plot shows the data and prediction as they were found in the object.")
+               "The plot shows the data and prediction as they were found in the object.")
   }
   data__ <- res[["IQRpredtable"]][[1]]
   data__ <- dplyr::filter(data__, name == paste0("OUTPUT", OUTPUT))
@@ -9007,7 +9078,7 @@ plotWRES_IQRsysModel <- function(res, OUTPUT = 1) {
 plotDVPRED_IQRsysModel <- function(res, OUTPUT = 1) {
   if (is.null(res[["parframes"]][[1]])) {
     warningIQR("The IQRsysModel object did not contain estimation information.",
-            "The plot shows the data and prediction as they were found in the object.")
+               "The plot shows the data and prediction as they were found in the object.")
   }
   data__ <- res[["IQRpredtable"]][[1]]
   if (is.null(data__)) {
@@ -9186,7 +9257,7 @@ pars_IQRsysModel <- function(sysModel, ..., parameters = NULL, dosing = NULL, FL
         names(v__)[!is_condition] <- n__
         if (any(duplicated(names(v__))))
           stopIQR("Vector of parameter values for ", n__, " were badly defined. ",
-               "Names should correspond to CONDITIONs or should be omitted if referring to the BASE parameter.")
+                  "Names should correspond to CONDITIONs or should be omitted if referring to the BASE parameter.")
         v__
       })
     )
@@ -9237,7 +9308,7 @@ pars_IQRsysModel <- function(sysModel, ..., parameters = NULL, dosing = NULL, FL
     not_defined__ <- setdiff(names(parameters__), IQRpartable__[["parametername"]])
     if (length(not_defined__) > 0) {
       warningIQR("The following parameters were not recognized and were ignored: ",
-              paste(not_defined__, collapse = ", "))
+                 paste(not_defined__, collapse = ", "))
     }
     defined__ <- intersect(names(parameters__), IQRpartable__[["parametername"]])
     rowindex__ <- match(defined__, IQRpartable__[["parametername"]])
@@ -10623,9 +10694,9 @@ dMod_init_empty_objlist <- function(pars, deriv = TRUE) {
   if (!deriv)
     return(objlist(0,NULL,NULL))
   objlist(value = 0,
-                gradient = setNames(rep(0, length(pars)), names(pars)),
-                hessian = matrix(0, nrow = length(pars), ncol = length(pars),
-                                 dimnames = list(names(pars), names(pars))))
+          gradient = setNames(rep(0, length(pars)), names(pars)),
+          hessian = matrix(0, nrow = length(pars), ncol = length(pars),
+                           dimnames = list(names(pars), names(pars))))
 }
 dMod_rename_objlist <- function(myobjlist, condition, est.grid) {
   est_lookup__ <- unlist(est.grid[est.grid$ID == condition,])
@@ -10651,7 +10722,7 @@ dMod_res <- function(data, out, err = NULL) {
   names <- unique(data$name)
   data.time <- match.num(data$time, times)
   if (any(is.na(data.time)))
-      stopIQR("Missing data time in prediction. Possible reason: premature termination of integration. Try setting different integrator tolerances.")
+    stopIQR("Missing data time in prediction. Possible reason: premature termination of integration. Try setting different integrator tolerances.")
   data.name <- match(data$name, names)
   out.time <- match.num(times, out[,1])
   out.name <- match(names, colnames(out))
@@ -11262,7 +11333,7 @@ dMod_handle_default_options <- function(OPT, SIMOPT) {
   )
   if (length(c(setdiff(names(OPT), names(OPT0__)),setdiff(names(SIMOPT), names(SIMOPT0__)))))
     stopIQR("Unkown options: ", paste0(c(setdiff(names(OPT), names(OPT0__)),setdiff(names(SIMOPT), names(SIMOPT0__))), collapse = ", "),
-         "\n Please add these to dMod_handle_default_options()")
+            "\n Please add these to dMod_handle_default_options()")
   OPT0__[names(OPT)] <- OPT
   SIMOPT0__[names(SIMOPT)] <- SIMOPT
   return(list(OPT = OPT0__, SIMOPT = SIMOPT0__))
@@ -11366,9 +11437,9 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
   loadedPackages__ <- .packages()
   if (ncores > 1 & any(c("RevoUtils", "RevoUtilsMath") %in% loadedPackages__))
     stopIQR("Loaded packages RevoUtils/RevoUtilsMath can cause problems with IQRtools when running with ncores > 1. Please unload with\n",
-         "    detach('package:RevoUtils', unload=TRUE)\n",
-         "    detach('package:RevoUtilsMath', unload=TRUE)\n",
-         "before continuing.")
+            "    detach('package:RevoUtils', unload=TRUE)\n",
+            "    detach('package:RevoUtilsMath', unload=TRUE)\n",
+            "before continuing.")
   SIMOPT.cores <- mymodel[["options"]][[1]][["SIMOPT.cores"]]
   if (SIMOPT.cores > 1 & ncores > 1) {
     ncores <- 1
@@ -11422,16 +11493,16 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
       dummy__ <- run_silent_IQR(try(p(pars), silent = TRUE))
       if (any(sapply(dummy__, function(d__) inherits(d__, "try-error"))))
         stopIQR("Evaluation of model parameterization yields error. Possible sources:\n",
-             "  * Initial conditions in STATES section of IQR model file\n",
-             "  * VARIABLES section of IQR model file\n",
-             "  * INITIAL ASSIGNMENTS section of IQR model file\n",
-             "  * IIVdistribution in model spec")
+                "  * Initial conditions in STATES section of IQR model file\n",
+                "  * VARIABLES section of IQR model file\n",
+                "  * INITIAL ASSIGNMENTS section of IQR model file\n",
+                "  * IIVdistribution in model spec")
       if (is_df) cat("\b\b\b\b\b\b\b[--   ]") else cat("\b\b\b\b\b\b\b\b\b[--     ]")
       dummy__ <- run_silent_IQR(try(prd(times, pars, deriv = FALSE), silent = TRUE))
       if (inherits(dummy__, "try-error")) stopIQR("Simulation of model without derivatives failed. Possible sources:\n",
-                                               "  * Bad parameter guesses or initial values\n",
-                                               "  * Integration tolerances\n",
-                                               "Try to simulate with sim_IQRsysModel() to find appropriate initial guesses and integrator settings.")
+                                                  "  * Bad parameter guesses or initial values\n",
+                                                  "  * Integration tolerances\n",
+                                                  "Try to simulate with sim_IQRsysModel() to find appropriate initial guesses and integrator settings.")
       else {
         infinits <- lapply(dummy__, function(d__) sapply(as.data.frame(d__), function(x__) any(is.infinite(x__))))
         inf_cond <- names(dummy__)[sapply(infinits, function(i__) any(i__))]
@@ -11447,15 +11518,15 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
       sigma__ <- as.data.frame(dummy__)
       is_inf.sigma__ <- !is.finite(sigma__[["value"]])
       if (any(is_inf.sigma__)) stopIQR("Error model cannot be evaluated for following outputs: ", paste(unique(sigma__[["name"]][is_inf.sigma__]), sep = ", "), ".\n",
-                                    "Check the model predictions for these outputs.")
+                                       "Check the model predictions for these outputs.")
       is_neg.sigma__ <- (sigma__[["value"]] < 0)
       if (any(is_neg.sigma__)) stopIQR("Error model predicts negative values for the following outputs: ", paste(unique(sigma__[["name"]][is_neg.sigma__]), sep = ", "), ".\n",
-                                    "Probably a relative error model is used and the predicted OUTPUT is negative.")
+                                       "Probably a relative error model is used and the predicted OUTPUT is negative.")
       is_zero.sigma__ <- (sigma__[["value"]] == 0)
       if (any(is_zero.sigma__)) stopIQR("Error model predicts 0 for the following outputs: ", paste(unique(sigma__[["name"]][is_zero.sigma__]), sep = ", "), ".\n",
-                                     "Probably a relative error model is used and the predicted OUTPUT is 0.\n",
-                                     "Please change error model to \"absrel\" or remove observation records from data set that ",
-                                     "correspond to 0 predictions.")
+                                        "Probably a relative error model is used and the predicted OUTPUT is 0.\n",
+                                        "Please change error model to \"absrel\" or remove observation records from data set that ",
+                                        "correspond to 0 predictions.")
       if (is_df) cat("\b\b\b\b\b\b\b[---- ]") else cat("\b\b\b\b\b\b\b\b\b[----   ]")
       dummy__ <- run_silent_IQR(try(obj(pars, deriv = FALSE), silent = TRUE))
       if (hasError(dummy__)) {
@@ -11469,10 +11540,10 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
         dummy__ <- run_silent_IQR(try(prd(times, pars, deriv = TRUE), silent = TRUE))
         if (any(sapply(dummy__, function(d__) inherits(d__, "try-error"))))
           stopIQR("Simulation of model sensitivities failed. Known sources:\n",
-               "  * Typically estimation of hill parameters and exponents.\n",
-               "  * Generally, estimation of parameters involved in expressions x^p (x is a state, p is the parameter to be estimated)\n",
-               "The problem for the above cases occurs when x = 0. Conserider shiftig x by a small value eps -> (x+eps)^p in ",
-               "your model file.")
+                  "  * Typically estimation of hill parameters and exponents.\n",
+                  "  * Generally, estimation of parameters involved in expressions x^p (x is a state, p is the parameter to be estimated)\n",
+                  "The problem for the above cases occurs when x = 0. Conserider shiftig x by a small value eps -> (x+eps)^p in ",
+                  "your model file.")
         cat("\b\b\b\b\b\b\b\b\b[------ ]")
         dummy__ <- run_silent_IQR(try(obj(pars, deriv = TRUE), silent = TRUE))
         if (hasError(dummy__)) {
@@ -11480,7 +11551,7 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
         }
         is_inf.grad__ <- !is.finite(dummy__[["gradient"]])
         if (any(is_inf.grad__)) stopIQR("Non-finite gradient of the objective function for the following parameters: ", paste(names(dummy__[["gradient"]])[is_inf.grad__]), collapse = ", ", ".\n",
-                                     "Reason unknown.")
+                                        "Reason unknown.")
         cat("\b\b\b\b\b\b\b\b\b[-------]")
       }
     })
@@ -11491,16 +11562,16 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
   cat("----------------------------------------------------------------------------------------\n\n", file = "project_obj.log", append = TRUE)
   cat("Running fits ... ")
   fits__ <- mstrust(mymodel$obj[[1]],
-                          mymodel$startpars[[1]],
-                          rinit   = opt.rinit,
-                          rmax    = opt.rmax,
-                          iterlim = opt.iterlim,
-                          cores = ncores,
-                          optmethod = opt.method,
-                          parlower = opt.parlower,
-                          parupper = opt.parupper,
-                          printIter = TRUE,
-                          traceFile = "optTrace.csv")
+                    mymodel$startpars[[1]],
+                    rinit   = opt.rinit,
+                    rmax    = opt.rmax,
+                    iterlim = opt.iterlim,
+                    cores = ncores,
+                    optmethod = opt.method,
+                    parlower = opt.parlower,
+                    parupper = opt.parupper,
+                    printIter = TRUE,
+                    traceFile = "optTrace.csv")
   mymodel <- dplyr::mutate(mymodel, fits = list(fits__))
   cat("done.\n")
   cat("Augmenting result by derived quantities ... ")
@@ -11544,11 +11615,11 @@ dMod_sysProject_computations <- function(mymodel, ncores, FLAGrequireConverged =
                              profiles = list(
                                structure(
                                  list(profile(obj,
-                                                    bestfit, 
-                                                    whichPar = names(bestfit)[!(grepl("^(omega|ETA|error_ADD|error_PROP)", names(bestfit))|names(bestfit)%in%names(c(fixed_on_lower, fixed_on_upper)))],
-                                                    cores = ncores,
-                                                    verbose = FALSE,
-                                                    fixed = c(fixed_on_lower, fixed_on_upper))),
+                                              bestfit, 
+                                              whichPar = names(bestfit)[!(grepl("^(omega|ETA|error_ADD|error_PROP)", names(bestfit))|names(bestfit)%in%names(c(fixed_on_lower, fixed_on_upper)))],
+                                              cores = ncores,
+                                              verbose = FALSE,
+                                              fixed = c(fixed_on_lower, fixed_on_upper))),
                                  names = "1" 
                                )))
     cat("done.\n")
@@ -12189,8 +12260,8 @@ convert2dMod_IQRdata <- function(datafile = NULL,
     data <- as.datalist(data, split.by = split.by, keep.covariates = keep__)
     condition.grid <- attr(data, "condition.grid")
     data <- as.datalist(lapply(data, function(d) d[d[["name"]] != "OUTPUT0",]),
-                              names = names(data),
-                              condition.grid = attr(data, "condition.grid"))
+                        names = names(data),
+                        condition.grid = attr(data, "condition.grid"))
   }
   dosing_pars__ <- trafo__ <- max_scheme__ <- NULL
   mydosing__ <- mydata0__[is.na(mydata0__[["YTYPE"]]) | mydata0__[["YTYPE"]] %in% 0, unique(c("TIME", "ID", "AMT", "ADM", "TINF", keep__))]
@@ -12233,11 +12304,11 @@ combine_model_and_data <- function(basic_dMod_model__, my_dMod_data, myNlmeEst__
       forcings_c__ <- forcings_c__[order(forcings_c__[["time"]]),]
       forcings_c__ <- unique(forcings_c__)
       Xs(odemodel = basic_dMod_model__$model,
-               forcings = forcings_c__,
-               condition = C__,
-               optionsOde = mycontrols__[["optionsOde"]],
-               optionsSens = mycontrols__[["optionsSens"]],
-               fcontrol = mycontrols__[["fcontrol"]]
+         forcings = forcings_c__,
+         condition = C__,
+         optionsOde = mycontrols__[["optionsOde"]],
+         optionsSens = mycontrols__[["optionsSens"]],
+         fcontrol = mycontrols__[["fcontrol"]]
       )
     })
     x <- Reduce("+", x)
@@ -12299,24 +12370,24 @@ combine_model_and_data <- function(basic_dMod_model__, my_dMod_data, myNlmeEst__
     COVcentering = c(covariateMedianValues__, covariateCATreference__)
   ))
   out__ <- dMod.frame(hypothesis = date(),
-                            g = basic_dMod_model__[["g"]],
-                            x = x,
-                            p0 = list(p__),
-                            p = p_indiv__,
-                            data = my_dMod_data,
-                            e = basic_dMod_model__[["e"]],
-                            model = list(basic_dMod_model__[["model"]]))
+                      g = basic_dMod_model__[["g"]],
+                      x = x,
+                      p0 = list(p__),
+                      p = p_indiv__,
+                      data = my_dMod_data,
+                      e = basic_dMod_model__[["e"]],
+                      model = list(basic_dMod_model__[["model"]]))
   out__ <- appendObj(out__,
-                           prd = list(prd_indiv__),
-                           obj_data = list(obj_data__),
-                           obj = list(obj__),
-                           parameters = list(parameters),
-                           pars = list(est.vec__),
-                           est.grid = list(est.grid__),
-                           fixed.grid = list(fixed.grid__),
-                           times = list(times__),
-                           ETA = list(c(IIVpars__$ETApars.est, IIVpars__$ETApars.fix)),
-                           omega = list(IIVpars__$omegapars.est))
+                     prd = list(prd_indiv__),
+                     obj_data = list(obj_data__),
+                     obj = list(obj__),
+                     parameters = list(parameters),
+                     pars = list(est.vec__),
+                     est.grid = list(est.grid__),
+                     fixed.grid = list(fixed.grid__),
+                     times = list(times__),
+                     ETA = list(c(IIVpars__$ETApars.est, IIVpars__$ETApars.fix)),
+                     omega = list(IIVpars__$omegapars.est))
   class(out__) <- c("IQRsysModel", class(out__))
   attr(out__, "sysModelEst") <- list(
     model = myNlmeEst__$model,
@@ -12858,7 +12929,7 @@ aux_version <- function(pkgName="IQRtools", IQdesktop=NULL, exactVersion=NULL, m
   curVersion__ <- tryCatch(
     utils::packageVersion(pkgName),
     error=function (err) return ("No version present")
-    )
+  )
   if (is.null(curVersion__)) return (NULL) 
   if (is.null(minVersion) & is.null(exactVersion) & is.null(IQdesktop)) {
     return(curVersion__)
@@ -13115,8 +13186,8 @@ aux_postFillChar <- function(value2postfill,lengthString,fillChar) {
   }
   result <- tryCatch({
     paste0(c(as.character(value2postfill)),
-                   paste0(rep(fillChar,lengthString-nchar(as.character(value2postfill))),collapse=""),
-                   collapse="")
+           paste0(rep(fillChar,lengthString-nchar(as.character(value2postfill))),collapse=""),
+           collapse="")
   }, error = function (msg) {
     result
   })
@@ -13615,9 +13686,9 @@ IQRdosing <- function(TIME, ADM, AMT,
   if (is.null(ADDL) & length(TIME) > 0) ADDL <- rep(0,length(TIME))
   if (is.null(II) & length(TIME) > 0) II <- rep(0,length(TIME))
   dosingTable__ <- data.frame(TIME=as.numeric(TIME),ADM=as.numeric(ADM),
-                            AMT=as.numeric(AMT),TINF=as.numeric(TINF),
-                            ADDL=ADDL, II=II,
-                            stringsAsFactors=FALSE)
+                              AMT=as.numeric(AMT),TINF=as.numeric(TINF),
+                              ADDL=ADDL, II=II,
+                              stringsAsFactors=FALSE)
   if (nrow(dosingTable__) > 0) {
     dosingTable__ <- do.call(rbind,lapply(1:nrow(dosingTable__), function (x) {
       if (dosingTable__$ADDL[x] == 0) {
@@ -13789,7 +13860,7 @@ IQReventTable <- function(data, regression=NULL, abs0inputs=NULL, abs0Tk0param=N
                   "(Note that for bolus doses, infusion time of 1e-4 is assumed and potential lag times are taken into account.):\n")
     if (nrow(check1)>0) {
       check1tab <- dplyr::bind_rows(structure(names(check1), names = names(check1)),
-                                 dplyr::mutate_all(check1, as.character))
+                                    dplyr::mutate_all(check1, as.character))
       check1tab <- as.data.frame(lapply(check1tab, format, justify = "right"), stringsAsFactors = FALSE)
       msg <- paste0(msg, "Multiple dosing events at same time points for:\n")
       for (kk in 1:nrow(check1tab)) {
@@ -13849,7 +13920,7 @@ genSim_IQReventTable <- function (eventTable,model,simtime,parametersSim) {
     stopIQR("Event table needs to contain ADM, AMT, and TINF columns.")
   if (length(setdiff(regressionParam__,names(model$parameters))) > 0)
     stopIQR("eventTable seems to contain column names that are neither parameters in the model or ID, TIME, ADM, AMT, TINF: \n",
-         paste0(setdiff(regressionParam__,names(model$parameters)), collapse = ", "))
+            paste0(setdiff(regressionParam__,names(model$parameters)), collapse = ", "))
   eventTable$LAGTIMECOL <- NA
   allADM__ <- unique(eventTable$ADM[!is.na(eventTable$ADM)])
   dummy__ <- sapply(allADM__, function (xxx__) {
@@ -13988,8 +14059,8 @@ nonNumICsFct_IQRmodel <- function (model__) {
     if (k+1 <= length(names(model__$variables))) {
       for (k2__ in (k+1):length(names(model__$variables)))
         varInfo__$varformulas[k2__] <- gsub(pattern = paste0("\\<",names(model__$variables)[k],"\\>"),
-                                          replacement = paste0("(",varInfo__$varformulas[k],")"),
-                                          x = varInfo__$varformulas[k2__])
+                                            replacement = paste0("(",varInfo__$varformulas[k],")"),
+                                            x = varInfo__$varformulas[k2__])
     }
   }
   reacInfo__  <- reactionsInfo_IQRmodel(model__)
@@ -13997,8 +14068,8 @@ nonNumICsFct_IQRmodel <- function (model__) {
     if (k+1 <= length(names(model__$reactions))) {
       for (k2__ in (k+1):length(names(model__$reactions)))
         reacInfo__$reacformulas[k2__] <- gsub(pattern = paste0("\\<",names(model__$reactions)[k],"\\>"),
-                                            replacement = paste0("(",reacInfo__$reacformulas[k],")"),
-                                            x = reacInfo__$reacformulas[k2__])
+                                              replacement = paste0("(",reacInfo__$reacformulas[k],")"),
+                                              x = reacInfo__$reacformulas[k2__])
     }
   }
   stateInfo__ <- statesInfo_IQRmodel(model__)
@@ -14811,7 +14882,7 @@ import_IQRmodel <- function(input,FLAGtextIQRmodel=FALSE) {
       any(grepl("********** MODEL STATE INFORMATION",modelText__,fixed = TRUE)))
     stopIQR("Both the '********** MODEL STATES' and the '********** MODEL STATE INFORMATION' identifier is present in the model (only one is allowed)")
   if (any(grepl("********** MODEL MATLAB FUNCTIONS",modelText__,fixed = TRUE)))
-      stopIQR("'MODEL MATLAB FUNCTIONS' identifier present in the model.\nThis is not allowed - please take it out")
+    stopIQR("'MODEL MATLAB FUNCTIONS' identifier present in the model.\nThis is not allowed - please take it out")
   sectionStarts__ <- which(grepl("********** MODEL",modelText__,fixed = TRUE))
   sectionLimits__ <- c(sectionStarts__, length(modelText__)+1)
   sections__ <- lapply(1:(length(sectionLimits__)-1), function (k__) {
@@ -14983,9 +15054,9 @@ parseInitialAssigments_IQRmodelText <- function(model,model_initialassignments__
     formulak__        <- aux_strtrim(substr(elementString,(temp__+1),nchar(variableString)))
     if (nchar(formulak__) == 0) stopIQR("At least one element definition for initial assignments not given")
     model             <- addInitialAssignment_IQRmodel(model,
-                                              name=namek__,
-                                              formula=formulak__,
-                                              notes=notesk__)
+                                                       name=namek__,
+                                                       formula=formulak__,
+                                                       notes=notesk__)
   }
   return(model)
 }
@@ -16205,7 +16276,7 @@ plot.IQRsimres <- function(x, ..., scales="free", facet="wrap", legend=TRUE) {
   }
   x.long.nar__$CONDITION <- as.factor(x.long.nar__$CONDITION)
   if (facet == "wrap") {
-     p__ <- IQRggplot(x.long.nar__, aes_string(x = "TIME", y = "VALUE", group="ID", color="CONDITION")) +
+    p__ <- IQRggplot(x.long.nar__, aes_string(x = "TIME", y = "VALUE", group="ID", color="CONDITION")) +
       facet_wrap(~NAME, scales = scales) +
       scale_color_IQRtools() +
       geom_line(size=1)
@@ -16955,16 +17026,16 @@ handle_stratificationIQR <- function(x, stratify) {
   stratcont__ <- intersect(strat__, covInfo0__$COLNAME)
   for (k__ in seq_along(stratcont__)) {
     strk__ <- stratcont__[k__]
-      strmed__ <- stats::median(unique(as.data.frame(data__)[,c("USUBJID",strk__)])[[strk__]], na.rm = TRUE)
-      strknew__ <- paste0(strk__,"CAT")
-      data__[[strknew__]] <- (data__[[strk__]] > strmed__)+1
-      covInfo0k__ <- subset(covInfo0__, COLNAME == strk__)
-      catInfo0__ <- rbind(catInfo0__,
-                          data.frame(COLNAME = strknew__, NAME = covInfo0k__$NAME, UNIT = covInfo0k__$UNIT, VALUES = "1,2",
-                                     VALUETXT = paste0("< ",strmed__,covInfo0k__$UNIT,",",">= ",strmed__,covInfo0k__$UNIT),
-                                     TIME.VARYING = FALSE)
-      )
-      strat__[strat__ == strk__] <- strknew__
+    strmed__ <- stats::median(unique(as.data.frame(data__)[,c("USUBJID",strk__)])[[strk__]], na.rm = TRUE)
+    strknew__ <- paste0(strk__,"CAT")
+    data__[[strknew__]] <- (data__[[strk__]] > strmed__)+1
+    covInfo0k__ <- subset(covInfo0__, COLNAME == strk__)
+    catInfo0__ <- rbind(catInfo0__,
+                        data.frame(COLNAME = strknew__, NAME = covInfo0k__$NAME, UNIT = covInfo0k__$UNIT, VALUES = "1,2",
+                                   VALUETXT = paste0("< ",strmed__,covInfo0k__$UNIT,",",">= ",strmed__,covInfo0k__$UNIT),
+                                   TIME.VARYING = FALSE)
+    )
+    strat__[strat__ == strk__] <- strknew__
   }
   return(list(data__, strat__, catInfo0__))
 }
@@ -17029,7 +17100,7 @@ add_LayerDosingSingle <- function(plobj__, dInfo__, ymin, ymax, tmin, tmax, sc__
   dInfo__ <- get_xposDosing(dInfo__, tmin, tmax)
   dInfo__ <- get_labelDosing(dInfo__)
   out__ <- plobj__ +
-  geom_segment(data=dInfo__, mapping = aes_string(x="TIMEdos", xend = "TIMEdos", y = "ystart", yend = "yend", color = "NAME"), size = 0.5, linetype = 2) +
+    geom_segment(data=dInfo__, mapping = aes_string(x="TIMEdos", xend = "TIMEdos", y = "ystart", yend = "yend", color = "NAME"), size = 0.5, linetype = 2) +
     geom_text(data=dInfo__, mapping = aes_string(x="TIMEdos", y="yend", label = "labelDos", color = "NAME"), angle = 90, size = 2.5, hjust = 0, show.legend = FALSE) +
     scale_color_manual("", values=IQRtoolsColors[2:20])
   out__
@@ -17154,10 +17225,10 @@ remove_legend <- function(x) {
 }
 #'@export
 createPages_IQRoutputFigure <- function(x,
-                                  nrow = NULL, ncol = NULL, npage = NULL,
-                                  legend.option = c("as.is", "remove", "common"),
-                                  legend.object = NULL, legend.position = "right", legend.relsize = 0.2,
-                                  title.relheight = 0.05, subtitle.relheight = 0.05, footer.relheight = 0.05) {
+                                        nrow = NULL, ncol = NULL, npage = NULL,
+                                        legend.option = c("as.is", "remove", "common"),
+                                        legend.object = NULL, legend.position = "right", legend.relsize = 0.2,
+                                        title.relheight = 0.05, subtitle.relheight = 0.05, footer.relheight = 0.05) {
   draft <- x$draft
   if (!is.null(x$opt.layout)) {
     for (opt in names(x$opt.layout)) assign(opt, x$opt.layout[[opt]])
@@ -17189,9 +17260,9 @@ createPages_IQRoutputFigure <- function(x,
       legend__ <- list(legend.object)[rep(1, npages__)]
     } else {
       legend__ <- lapply(which(!duplicated(pageIndex__)), function(ii) {
-              ll__ <- tryCatch(cowplot::get_legend(x$content[[ii]] + theme(legend.position=legend.position)), error = function(e) cat("First figure of page has no legend."))
-              if ("try-error" %in% class(ll__)) ll__ <- NULL
-              ll__
+        ll__ <- tryCatch(cowplot::get_legend(x$content[[ii]] + theme(legend.position=legend.position)), error = function(e) cat("First figure of page has no legend."))
+        if ("try-error" %in% class(ll__)) ll__ <- NULL
+        ll__
       })
     }
     relsizes__ <- c(1-legend.relsize, legend.relsize)
@@ -18299,14 +18370,14 @@ IQRcoxRegression <- function (
 }
 #'@export
 summary_IQRcoxRegression <- function(x,
-                                          basemodel   = NULL,
-                                          FLAGorder   = FALSE,
-                                          filename    = NULL,
-                                          SIGNIF      = 4,
-                                          FLAGreport  =TRUE,
-                                          FLAGformula = FALSE,
-                                          title       = NULL,
-                                          footerAdd   = NULL) {
+                                     basemodel   = NULL,
+                                     FLAGorder   = FALSE,
+                                     filename    = NULL,
+                                     SIGNIF      = 4,
+                                     FLAGreport  =TRUE,
+                                     FLAGformula = FALSE,
+                                     title       = NULL,
+                                     footerAdd   = NULL) {
   idxFolder__ <- !sapply(lapply(x, class), function(yy) "IQRcoxRegression" %in% yy)
   if (any(idxFolder__)) {
     idxFolder__ <- which(idxFolder__)
@@ -18353,9 +18424,9 @@ summary_IQRcoxRegression <- function(x,
     if (is.numeric(basemodel)) {
       idxbase__ <- basemodel
       namebase__ <- table__$Model[idxbase__]    } else {
-      namebase__ <- basemodel
-      idxbase__ <- which(table__$Model == namebase__)
-    }
+        namebase__ <- basemodel
+        idxbase__ <- which(table__$Model == namebase__)
+      }
     if (length(idxbase__) == 0) warningIQR("Base model could not be identified by given name.")
     else {
       FLAGbase <- TRUE
@@ -18771,11 +18842,11 @@ grow <- function(M, nrow, ncol, just = "tl", fillWith = "") {
   nrow__ <- max(nrow, n__)
   ncol__ <- max(ncol, m__)
   out__ <- switch(hjust__,
-                l = cbind(M, matrix(fillWith, nrow = n__, ncol = ncol__ - m__)),
-                r = cbind(matrix(fillWith, nrow = n__, ncol = ncol__ - m__), M))
+                  l = cbind(M, matrix(fillWith, nrow = n__, ncol = ncol__ - m__)),
+                  r = cbind(matrix(fillWith, nrow = n__, ncol = ncol__ - m__), M))
   out__ <- switch(vjust__,
-                t = rbind(out__, matrix(fillWith, nrow = nrow__ - n__, ncol = ncol(out__))),
-                b = rbind(matrix(fillWith, nrow = nrow__ - n__, ncol = ncol(out__)), out__))
+                  t = rbind(out__, matrix(fillWith, nrow = nrow__ - n__, ncol = ncol(out__))),
+                  b = rbind(matrix(fillWith, nrow = nrow__ - n__, ncol = ncol(out__)), out__))
   out__
 }
 #'@import ggplot2
@@ -18867,6 +18938,6 @@ globalVariables(c("exportpath","allowMONOLIXgui","atrcontents","x","k__","IQRTOO
                   "xptInfo","xptPath",
                   ".PATH_IQRsbmlOut","OBSERVATION.NAME","TOTAL.OBSERVATIONS",".ALLOW_SPACES_IN_PATH",
                   "FREQPLOT","FREQPLOTCI025","FREQPLOTCI975","Naesubjects","ORDERTAB","PLOTSTRAT","PLOTX","Path","Rank",
-				          "Reference OFV","Run failed","Signif","Target","dOFV","dDF","Target dOFV","included","prm","p-value",
-				          "Model", "Incl. in stage","Nae","TEND"
-                  ))
+                  "Reference OFV","Run failed","Signif","Target","dOFV","dDF","Target dOFV","included","prm","p-value",
+                  "Model", "Incl. in stage","Nae","TEND"
+))
