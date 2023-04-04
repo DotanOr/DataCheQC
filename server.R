@@ -10,6 +10,8 @@ trace(grDevices:::tiff, quote({
   }
 }), print = FALSE)
 ###
+### function to create a named vector consisting of the variables with their own names --------------------------
+give_own_name <- function(x) {names(x) <- x; as.list(x)}
 ### backtick function from package qwraps2------------------------------------------------------------------------
 backtick <- function(x, dequote = FALSE) {
   x <- deparse(substitute(x))
@@ -119,6 +121,7 @@ server <- function(input, output, session) {
       showNotification("File type isn't .csv or .sas7bdat; please try a different file", duration = NULL, type = "error")
     }
     message("file uploaded")
+    removeNotification(id = "missing_data_err")
     # check if the data is compliant with the required dataset format
     ## and return an error message/notification if it isn't
     musthave_cols <- c("USUBJID","COMPOUND","TRTNAME","TIMEUNIT","NT","TIME","NAME","VALUE","VALUETXT","UNIT","ROUTE")
@@ -200,19 +203,30 @@ server <- function(input, output, session) {
       select(NAME) %>%
       unique() %>%
       unlist(use.names = FALSE)
+    
     auto_opts <- mydata() %>%
       filter(str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, "((?i)^Age|(?i)^Weight|(?i)^BMI|(?i)^Height)")) %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
+      group_by(TYPENAME,NAME,USUBJID) %>%
+      summarise(Value = length(unique(VALUE)),Text = length(unique(VALUETXT))) %>% 
+      filter(all(Value <= 1) & (str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, "((?i)^Age|(?i)^Weight|(?i)^BMI|(?i)^Height)"))) %>% 
+      ungroup %>% 
+      select(NAME) %>% 
+      unique %>% 
+      unlist(use.names = FALSE) %>% 
+      as.character() %>% 
+      give_own_name() %>% 
+      .[.!="character(0)"] 
+    
     base_pd <- mydata() %>%
       filter(str_detect(TYPENAME, "PD")) %>%
       select(NAME) %>%
       unique() %>%
       unlist(use.names = FALSE) %>%
       paste0("Baseline ", .)
+    
     auto_opts <- append(auto_opts, base_pd)
     opts <- append(opts, base_pd)
+    
     concovIn <- selectInput("concovIn",
                             multiple = TRUE,
                             "Select continuous covariates:",
@@ -231,12 +245,19 @@ server <- function(input, output, session) {
       select(NAME) %>%
       unique() %>%
       unlist(use.names = FALSE)
+    
     auto_opts <- mydata() %>%
       filter(str_detect(TYPENAME, "(?i)categorical") | str_detect(NAME, "((?i)^Sex|(?i)^Race|(?i)^Gender|(?i)^Ethnic|(?i)^Health status$)")) %>%
-      filter(str_detect(TYPENAME, "(?i)Time-varying", negate = TRUE)) %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
+      group_by(TYPENAME,NAME,USUBJID) %>%
+      summarise(Value=length(unique(VALUE)),Text=length(unique(VALUETXT))) %>% 
+      filter(all(Value <= 1) & (str_detect(TYPENAME, "(?i)categorical") | str_detect(NAME, "((?i)^Sex|(?i)^Race|(?i)^Gender|(?i)^Ethnic|(?i)^Health status$)"))) %>% 
+      ungroup %>% 
+      select(NAME) %>% 
+      unique %>% 
+      unlist(use.names = FALSE) %>% 
+      as.character() %>% 
+      give_own_name() %>% 
+      .[.!="character(0)"]
     
     catcovIn <- selectInput("catcovIn",
                             multiple = TRUE,
@@ -259,10 +280,16 @@ server <- function(input, output, session) {
     
     auto_opts <-
       mydata() %>%
-      filter(str_detect(TYPENAME, "(?i)Time-varying Continuous")) %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
+      group_by(TYPENAME,NAME,USUBJID) %>%
+      summarise(Value = length(unique(VALUE)), Text = length(unique(VALUETXT))) %>% 
+      filter(any(Value > 1) & (str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, "((?i)^Age|(?i)^Weight|(?i)^BMI|(?i)^Height)"))) %>% 
+      ungroup %>% 
+      select(NAME) %>% 
+      unique %>% 
+      unlist(use.names = FALSE) %>% 
+      as.character() %>% 
+      give_own_name() %>% 
+      .[.!="character(0)"] 
     
     depConCovIn <- selectInput("depconcovIn",
                                multiple = TRUE,
@@ -285,10 +312,16 @@ server <- function(input, output, session) {
     
     auto_opts <-
       mydata() %>%
-      filter(str_detect(TYPENAME, "(?i)Time-varying Categorical")) %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
+      group_by(TYPENAME,NAME,USUBJID) %>%
+      summarise(Value=length(unique(VALUE)),Text=length(unique(VALUETXT))) %>% 
+      filter(any(Value > 1) & (TYPENAME %>% str_detect("(?i)categorical") | str_detect(NAME, "((?i)^Sex|(?i)^Race|(?i)^Gender|(?i)^Ethnic|(?i)^Health status$)"))) %>% 
+      ungroup %>% 
+      select(NAME) %>% 
+      unique %>% 
+      unlist(use.names = FALSE) %>% 
+      as.character() %>% 
+      give_own_name() %>% 
+      .[.!="character(0)"] 
     
     depCatCovIn <- selectInput("depcatcovIn",
                                multiple = TRUE,
@@ -357,24 +390,8 @@ server <- function(input, output, session) {
       )
     }
   )
-  # debounce inputs- only start loading 2 seconds after input to allow for changes
-  concov <- reactive(input$concovIn)
-  concov_d <- concov %>% debounce(2000)
-  impute_flag <- reactive(impute_flag)
-  impute_flag_d <- impute_flag %>% debounce(1000)
-  catcov <- reactive(input$catcovIn)
-  catcov_d <- catcov %>% debounce(2000)
-  obsin <- reactive(input$obsIn)
-  obsin_d <- obsin %>% debounce(2000)
-  dosein <- reactive(input$doseIn)
-  dosein_d <- dosein %>% debounce(2000)
-  depconcov <- reactive(input$depconcovIn)
-  depconcov_d <- depconcov %>% debounce(2000)
-  depcatcov <- reactive(input$depcatcovIn)
-  depcatcov_d <- depcatcov %>% debounce(2000)
-  obs_select <- reactive(input$obs_select)
-  obs_select_d <- obs_select %>% debounce(2000)
   
+  # debounce inputs- only start loading 2 seconds after input to allow for changes
   input_list <- reactive(
     list(
       "concov" = input$concovIn,
@@ -383,7 +400,7 @@ server <- function(input, output, session) {
       "obsin" = input$obsIn,
       "dosein" = input$doseIn,
       "depconcov" = input$depconcovIn,
-      "depcatcov" = input$depactcovIn,
+      "depcatcov" = input$depcatcovIn,
       "clean_flag" = input$clean_flag
     )
   )
@@ -627,7 +644,14 @@ server <- function(input, output, session) {
         target = "_blank",
         download = NA,
         "Hidden Button"
-      ) %>% tagAppendAttributes(style = "visibility: hidden; height: 0; width: 0; padding: 0;")
+      ) %>% tagAppendAttributes(style = "visibility: hidden; height: 0; width: 0; padding: 0;"),
+      tags$button(
+        id = "qc_return",
+        class = "btn btn-default action-button",
+        style = "margin-top: 8px;",
+        tags$i(class = "fa solid fa-file-pen", style = "margin-right: 3px;"),
+        "Switch to Report Tab"
+      )
     )
   })
   
@@ -848,36 +872,22 @@ server <- function(input, output, session) {
     input$spec_file$datapath
   })
   
-  output$switch_to_value <- renderUI({
-    req(spec_path())
-    checkboxInput(
-      inputId = "event_table_switch",
-      label = "Switch to event table",
-      value = FALSE,
-      width = "195px"
-    )
-  })
-  
-  output$opt_filter_flag <- renderUI({
-    req(spec_path())
-    req(input$event_table_switch != TRUE)
-    checkboxInput(
-      inputId = "opt_flag",
-      label = "Filter optional variables",
-      value = FALSE,
-      width = "195px"
-    )
-  })
-  
-  output$pmxian_filter_flag <- renderUI({
-    req(spec_path())
-    req(input$event_table_switch != TRUE)
-    checkboxInput(
-      inputId = "pmxian_flag",
-      label = "Filter variables requiring input from the pharmacometrician",
-      value = FALSE,
-      width = "195px"
-    )
+  observeEvent(specs(),{
+    if (!is.null(specs())) {
+      shinyjs::show(id = "event_table_switch", anim = T)
+      if (!input$event_table_switch){
+        shinyjs::show(id = "opt_flag", anim = T)
+        shinyjs::show(id = "pmxian_flag", anim = T)
+      } else {
+        shinyjs::hide(id = "opt_flag",anim = T)
+        shinyjs::hide(id = "pmxian_flag", anim = T)  
+      }
+    }
+    else {
+      shinyjs::hide(id = "event_table_switch", anim = T)
+      shinyjs::hide(id = "opt_flag", anim = T)
+      shinyjs::hide(id = "pmxian_flag", anim = T)
+    }
   })
   
   # read the information from the specification file -------------------------------------------
@@ -965,39 +975,220 @@ server <- function(input, output, session) {
       column_specs <- column_specs %>% filter(if_any(contains("PMXian.input"), ~ . != "No"))
     }
     
+    shinyjs::show(id = "col_choose", anim = T)
+    
     if (input$event_table_switch == TRUE) {
+      choice_list <- value_specs %>% select(matches("^(?i)Name$")) %>% unlist(F,F)
+      updateSelectInput(session = getDefaultReactiveDomain(), inputId = "col_choose", selected = "", choices = choice_list)
       return(value_specs)
     }
-    
-    
     colnames(column_specs)[5] <- str_to_title(colnames(column_specs)[5])
-    
-    
+    choice_list <- column_specs %>% select(matches("^(?i)Name$")) %>% unlist(F,F)
+    updateSelectInput(session = getDefaultReactiveDomain(), inputId = "col_choose", selected = "", choices = choice_list)
     return(column_specs)
-  })
-  
-  output$column_choose <- renderUI({
-    req(!is.null(specs()))
-    choice_list <- specs() %>% select(matches("^(?i)Name$")) %>% unlist(F,F)
-    selectInput(
-      inputId = "col_choose",
-      label = "Choose column(s) to examine:",
-      choices = choice_list,
-      multiple = TRUE
-    )
   })
   
   col_choose <- reactive({input$col_choose})
   col_choose_d <- col_choose %>% debounce(800)
   
-  #clear the column selector when switching tables
-  observeEvent(
-    {
-      input$event_table_switch
-    },
-    {
-      updateSelectInput(session = getDefaultReactiveDomain(), inputId = "col_choose", selected = "")
+  # show the data from the dataset and provide relevant info (duplicated values, NAs, etc.)-------------------------
+  data_cols_table <- reactive({
+    req(isTruthy(col_choose_d()) & isTruthy(specs()))
+    
+    if (class(try(mydata(), silent = T))[1] == "try-error"){
+      showNotification("No dataset loaded yet - showing only specs", duration = NULL, id = "missing_data_err", type = "error")
+      return(NULL)
+    } else {
+      removeNotification(id = "missing_data_err")
     }
+    
+    # get summary of values from the dataset
+    if (isTruthy(spec_path()) & isTruthy(col_choose_d())) {
+      if (isolate(input$event_table_switch)) { # for variables derived from the NAME-VALUE-VALUETXT columns
+        table <- c()
+        for (i in req(col_choose_d())) {
+          i_type <- mydata() %>%
+            filter(NAME %in% i) %>%
+            select(TYPENAME) %>%
+            unique() %>%
+            unlist(F, F)
+          if (is_empty(i_type)){
+            next
+          }
+          if (str_detect(i_type, "(?i)categorical|(?i)dose") |
+              mydata() %>% filter(NAME == i) %>% filter(!is.na(VALUETXT) && !is.null(VALUETXT) && VALUETXT != "" && VALUETXT != ".") %>% dim(.) %>% is_greater_than(0) %>% all() 
+          ) {
+            if (str_detect(i_type, "(?i)dose")) {
+              param <- "VALUE"
+              sepr <- ""
+            }
+            else {
+              param <- "VALUETXT"
+              sepr <- "|"
+            }
+            current <-
+              mydata() %>%
+              filter(NAME == i) %>%
+              select(c(VALUE,VALUETXT, UNIT)) %>%
+              .[,.(Variable = i,
+                   `Number of NAs` = sum(is.na(param), na.rm = T),
+                   `Number of Blanks` = sum(param == "" | param == ".", na.rm = T),
+                   Unit = ifelse(
+                     str_detect(i_type, "(?i)dose"),
+                     unique(UNIT),
+                     ""
+                   ))] %>%
+              .[,Values := paste(
+                mydata() %>%
+                  filter(NAME == i) %>%
+                  .[order(VALUE)] %>% 
+                  select(VALUETXT) %>%
+                  unique() %>%
+                  as.character() %>% 
+                  str_replace_all("^.$",""),
+                sepr,
+                mydata() %>%
+                  filter(NAME == i) %>%
+                  .[order(VALUE)] %>% 
+                  select(VALUE) %>%
+                  unique() %>%
+                  {
+                    if_else(nrow(.) >= 10 & sapply(., is.numeric),
+                            paste(range(., na.rm = T), collapse = "-"),
+                            as.character(.))
+                  }
+              ) %>% str_trim]
+          }
+          else {
+            current <-
+              mydata() %>%
+              filter(NAME %in% i) %>%
+              select(VALUE, UNIT) %>%
+              .[,.(
+                Variable = i,
+                `Values` = paste(range(VALUE, na.rm = T), collapse = "-"),
+                `Number of NAs` = sum(is.na(VALUE), na.rm = T),
+                `Number of Blanks` = sum(VALUE == "" | VALUE == ".", na.rm = T),
+                Unit = unique(UNIT)
+              )] %>%
+              .[, Values := as.character(Values)]
+          }
+          current <- current %>% select(Variable, Values, Unit, `Number of NAs`, `Number of Blanks`)
+          table <- rbind(table, current)
+        }
+        table
+      }
+      else {
+        #for other columns from the dataset that aren't NAME/VALUE/VALUETXT
+        cols_tab <- col_choose_d()[col_choose_d() %in% names(mydata())]
+        if (!is_empty(cols_tab)) {
+          try(
+            mydata() %>%
+              select(any_of(cols_tab)) %>%
+              summarize(
+                `Variable` = cols_tab,
+                `Unique Values` =
+                  lapply(cols_tab, select,
+                         .data = mydata() %>% as.data.frame()
+                  ) %>%
+                  lapply(unique) %>%
+                  unlist(recursive = FALSE),
+                `Number of Unique Values` = sapply(`Unique Values`, length),
+                Type = sapply(`Unique Values`, class) %>% str_to_sentence(),
+                `Number of NAs` = sapply(X = cols_tab, FUN = function(x) sum(is.na(mydata()[[x]]), na.rm = T)),
+                `Number of Blanks` = sapply(X = cols_tab, FUN = function(x) sum(mydata()[[x]] == "", na.rm = T))
+              ) %>%
+              mutate(`Unique Values` = `Unique Values` %>% as.character()) %>%
+              mutate(
+                `Unique Values` =
+                  ifelse(
+                    # if the vector is longer than 100 and contains commas
+                    sapply(`Unique Values`, function(x) str_length(x) >= 100 && !is.na(str_locate(x, ","))),
+                    # find the comma that's nearest to 100 and shorten the vector to that length
+                    str_sub(`Unique Values`, 1, str_locate_all(`Unique Values`, ",") %>% lapply(function(y) y[y <= 100] %>% max(na.rm = T))) %>%
+                      # then add an ellipsis (...) to it for good measure
+                      paste(., "...)"),
+                    `Unique Values`
+                  )
+              ),
+            silent = TRUE
+          ) %>% suppressWarnings()}
+      }
+    }
+  })
+  
+  # Show chosen columns from dataset-------------------------------------------------
+  output$data_cols <- renderDataTable(
+    {
+      req(data_cols_table())
+      req(nrow(data_cols_table()) > 0)
+      data_cols_table()
+    },
+    options = list(
+      scrollX = FALSE,
+      deferRender = TRUE,
+      scroller = TRUE,
+      dom = "Bfrtp",
+      buttons = "excel",
+      paging = T,
+      pageLength = min(length(col_choose_d()), nrow(data_cols_table())),
+      #scrollY = 10 + (50 * min(length(col_choose_d()), nrow(data_cols_table()))),
+      rowHeight = 30,
+      # function to mark duplicated rows in red (e.g., if they have different units for the same variable)
+      ## and mark rows with multiple NA/Blank values in yellow
+      createdRow = JS(
+        glue::glue('function(row, data, index) {
+                        let conditions = [{{
+                        ifelse(isTruthy(data_cols_table()),
+                        data_cols_table() %>%
+                        group_by(Variable) %>%
+                        summarise(n=n()) %>%
+                        filter(n>1) %>%
+                        select("Variable") %>%
+                        unlist(F,F) %>%
+                        lapply(function (x) paste0("\'",x,"\'")) %>%
+                        paste(collapse = ","),
+                        "")
+                        }}]
+                        
+                        let na_num_col = {{names(data_cols_table()) %>% str_which("Number of NAs")}} - 1
+                        let blank_num_col = {{names(data_cols_table()) %>% str_which("Number of Blanks")}} - 1 
+                        
+                        if (conditions.some(el => data[0].includes(el))) {
+                          $(row).css("background-color", "#ee232373");
+                        }
+                        else if ((data[na_num_col] > 0 & data[na_num_col] < 100) | (data[blank_num_col] > 0 & data[blank_num_col] < 100)) {
+                          $(row).css("background-color", "#ddc51854")
+                        }
+                      }',
+                   .open = "{{",
+                   .close = "}}"
+        )
+      )
+    ),
+    rownames = FALSE
+  )
+  
+  # Show columns from specification file
+  output$spec_cols <- renderDataTable({
+    req(specs())
+    req(col_choose_d())
+    spec_table <- specs() %>% filter(if_any(contains("Name"), ~ . %in% col_choose_d()))
+    req({nrow(spec_table) > 0})
+    spec_table
+  },
+  options = list(
+    scrollX = TRUE,
+    deferRender = TRUE,
+    scroller = TRUE,
+    keys = TRUE,
+    dom = "Brtp",
+    buttons = "excel",
+    scrollY = 300,
+    rowHeight = 30
+  ),
+  extensions = "KeyTable",
+  rownames = FALSE
   )
   
   observeEvent({col_choose_d()},
@@ -1193,6 +1384,7 @@ server <- function(input, output, session) {
       return("Reported QC variables:")
     }
   })
+  
   output$current_report <-
     renderDataTable(
       report_columns$reporto,
@@ -1278,196 +1470,6 @@ server <- function(input, output, session) {
       value = TRUE
     )
   })
-  # show the data from the dataset and provide relevant info (duplicated values, NAs, etc.)-------------------------
-  data_cols_table <- reactive({
-    req(specs())
-    req(col_choose_d())
-    if (class(try(mydata(), silent = T))[1] == "try-error"){
-      showNotification("No dataset loaded yet - showing only specs", duration = NULL, id = "missing_data_err", type = "error")
-      req(mydata())
-    } else {
-      removeNotification(id = "missing_data_err")
-    }
-    
-    if (!is.null(spec_path()) & !is.null(col_choose_d())) {
-      if (input$event_table_switch) { # for variables derived from the NAME-VALUE-VALUETXT columns
-        table <- c()
-        for (i in req(col_choose_d())) {
-          i_type <- mydata() %>%
-            filter(NAME %in% i) %>%
-            select(TYPENAME) %>%
-            unique() %>%
-            unlist(F, F)
-          if (is_empty(i_type)){
-            next
-          }
-          if (str_detect(i_type, "(?i)categorical|(?i)dose") |
-              mydata() %>% filter(NAME == i) %>% filter(!is.na(VALUETXT) && !is.null(VALUETXT) && VALUETXT != "" && VALUETXT != ".") %>% dim(.) %>% is_greater_than(0) %>% all() 
-          ) {
-            if (str_detect(i_type, "(?i)dose")) {
-              param <- "VALUE"
-              sepr <- ""
-            }
-            else {
-              param <- "VALUETXT"
-              sepr <- "|"
-            }
-            current <-
-              mydata() %>%
-              filter(NAME == i) %>%
-              select(c(param, UNIT)) %>%
-              summarize(
-                Variable = i,
-                `Number of NAs` = sum(is.na(param)),
-                `Number of Blanks` = sum(param == ""),
-                Unit = ifelse(
-                  str_detect(i_type, "(?i)dose"),
-                  unique(UNIT),
-                  ""
-                )
-              ) %>%
-              mutate(
-                `Values` =
-                  paste(
-                    mydata() %>%
-                      filter(NAME == i) %>%
-                      select(VALUETXT) %>%
-                      unique() %>%
-                      as.character(),
-                    sepr,
-                    mydata() %>%
-                      filter(NAME == i) %>%
-                      select(VALUE) %>%
-                      unique() %>%
-                      as.character()
-                  )
-              )
-          }
-          else {
-            current <-
-              mydata() %>%
-              filter(NAME %in% i) %>%
-              select(VALUE, UNIT) %>%
-              summarize(
-                Variable = i,
-                `Values` = paste0(min(VALUE, na.rm = T), "-", max(VALUE, na.rm = T)),
-                `Number of NAs` = sum(is.na(VALUE)),
-                `Number of Blanks` = sum(VALUE == ""),
-                Unit = unique(UNIT)
-              ) %>%
-              mutate(`Values` = `Values` %>% as.character())
-          }
-          current <- current %>% select(Variable, Values, Unit, `Number of NAs`, `Number of Blanks`)
-          table <- rbind(table, current)
-        }
-        table
-      }
-      else {
-        #get cols from dataset
-        cols_tab <- col_choose_d()[col_choose_d() %in% names(mydata())]
-        if (!is_empty(cols_tab)) {
-          try(
-            mydata() %>%
-              select(any_of(cols_tab)) %>%
-              summarize(
-                `Variable` = cols_tab,
-                `Unique Values` =
-                  lapply(cols_tab, select,
-                         .data = mydata() %>% as.data.frame()
-                  ) %>%
-                  lapply(unique) %>%
-                  unlist(recursive = FALSE),
-                `Number of Unique Values` = sapply(`Unique Values`, length),
-                Type = sapply(`Unique Values`, class) %>% str_to_sentence(),
-                `Number of NAs` = sapply(X = cols_tab, FUN = function(x) sum(is.na(mydata()[[x]]))),
-                `Number of Blanks` = sapply(X = cols_tab, FUN = function(x) sum(mydata()[[x]] == ""))
-              ) %>%
-              mutate(`Unique Values` = `Unique Values` %>% as.character()) %>%
-              mutate(
-                `Unique Values` =
-                  ifelse(
-                    # if the vector is longer than 100 and contains commas
-                    sapply(`Unique Values`, function(x) str_length(x) >= 100 && !is.na(str_locate(x, ","))),
-                    # find the comma that's nearest to 100 and shorten the vector to that length
-                    str_sub(`Unique Values`, 1, str_locate_all(`Unique Values`, ",") %>% lapply(function(y) y[y <= 100] %>% max())) %>%
-                      # then add an ellipsis (...) to it for good measure
-                      paste(., "...)"),
-                    `Unique Values`
-                  )
-              ),
-            silent = TRUE
-          ) %>% suppressWarnings()}
-      }
-    }
-  })
-  
-  # Show chosen columns from dataset-------------------------------------------------
-  output$data_cols <- renderDataTable(
-    req(data_cols_table()),
-    options = list(
-      scrollX = FALSE,
-      deferRender = TRUE,
-      scroller = TRUE,
-      dom = "Bfrtp",
-      buttons = "excel",
-      paging = T,
-      pageLength = min(length(col_choose_d()), nrow(data_cols_table())),
-      #scrollY = 10 + (50 * min(length(col_choose_d()), nrow(data_cols_table()))),
-      rowHeight = 30,
-      # function to mark duplicated rows in red (e.g., if they have different units for the same variable)
-      ## and mark rows with multiple NA/Blank values in yellow
-      createdRow = JS(
-        glue::glue('function(row, data, index) {
-                        let conditions = [{{
-                        data_cols_table() %>%
-                        group_by(Variable) %>%
-                        summarise(n=n()) %>%
-                        filter(n>1) %>%
-                        select("Variable") %>%
-                        unlist(F,F) %>%
-                        lapply(function (x) paste0("\'",x,"\'")) %>%
-                        paste(collapse = ",") 
-                        }}]
-                        
-                        let na_num_col = {{names(data_cols_table()) %>% str_which("Number of NAs")}} - 1
-                        let blank_num_col = {{names(data_cols_table()) %>% str_which("Number of Blanks")}} - 1 
-                        
-                        if (conditions.some(el => data[0].includes(el))) {
-                          $(row).css("background-color", "#ee232373");
-                        }
-                        else if ((data[na_num_col] > 0 & data[na_num_col] < 100) | (data[blank_num_col] > 0 & data[blank_num_col] < 100)) {
-                          $(row).css("background-color", "#ddc51854")
-                        }
-                      }',
-                   .open = "{{",
-                   .close = "}}"
-        )
-      )
-    ),
-    rownames = FALSE
-  )
-  
-  # Show columns from specification file
-  output$spec_cols <- renderDataTable(
-    if (!is.null(input$event_table_switch) & isTruthy(col_choose_d()) & !is.null(specs())) {
-      specs() %>% filter(if_any(contains("Name"), ~ . %in% col_choose_d()))
-    }
-    else {
-      NULL
-    },
-    options = list(
-      scrollX = TRUE,
-      deferRender = TRUE,
-      scroller = TRUE,
-      keys = TRUE,
-      dom = "Brtp",
-      buttons = "excel",
-      scrollY = 300,
-      rowHeight = 30
-    ),
-    extensions = "KeyTable",
-    rownames = FALSE
-  )
   
   sumobv <- reactive({ # Prepare obseration summary table
     if (!is.null(dataset())) {
@@ -1638,7 +1640,7 @@ server <- function(input, output, session) {
     { 
       req(!is.null(dataset()))
       # Prepare covariate distribution according to type
-      covnames <- append(covInfo(dataset())$COLNAME, catInfo(dataset())$COLNAME)
+      covnames <- append(covInfo.IQRdataGENERAL(dataset())$COLNAME, catInfo.IQRdataGENERAL(dataset())$COLNAME)
       covnames <- covnames[!str_detect(covnames, "Baseline_")]
       covnames <- str_replace_all(covnames, "[-| ()]", "_")
       
@@ -1721,7 +1723,9 @@ server <- function(input, output, session) {
       # show a summary of continuous covs -------------------------------------------------------------
       sumcov <- reactive({
         req(!is.null(dataset()))
-        xtable <- summaryCov_IQRdataGENERAL(dataset())$xtable
+        cov_table <- summaryCov_IQRdataGENERAL(dataset())
+        xtable <- cov_table$xtable
+        attr(xtable, "caption") <- cov_table$xfooter
         unique_lengths <-
           sapply(
             xtable$Characteristic,
@@ -1748,7 +1752,11 @@ server <- function(input, output, session) {
           pageLength = 20,
           ordering = FALSE
         ),
-        rownames = FALSE
+        rownames = FALSE,
+        caption = tags$caption(
+          style = 'caption-side: bottom;display: flex;justify-content:space-between;',
+          tags$em(HTML(attr(sumcov(),"caption"))),
+        )
       )
       ### observation summary table ---------------------------------------------------
       output$contents <- renderDataTable( # Render a table showing observation summary
@@ -1925,7 +1933,6 @@ server <- function(input, output, session) {
       str_to_title()
   })
   
-  trtact_label <- "Days"
   conc_units <- 
     reactive({
       mydata() %>%
@@ -1936,6 +1943,7 @@ server <- function(input, output, session) {
         unique() %>%
         as.character()
     })
+  
   conc_label <- reactive({
     conc_label <- paste0("Concentration (", conc_units(), ")")
     return(conc_label)
@@ -1947,6 +1955,7 @@ server <- function(input, output, session) {
       filter(is.finite(NOMTIME)) %>%
       max(na.rm = TRUE)
   })
+  
   # Function to detect time-interval between doses ---------------------------------------------------------
   ticks_mad <- function(data) {
     if (length(unique(data$PART)) > 1 || any(str_detect(data$TRTNAME, "q\\dwk"))) {
@@ -1970,6 +1979,7 @@ server <- function(input, output, session) {
     }
   }
   time_ticks_mad <- reactive({ticks_mad(mydata())})
+  
   ### Startify plots with covariates ------------------------------------------------
   strat_choice <- reactive(input$strat_choice)
   strat_choice_d <- strat_choice %>% debounce(1000)
@@ -2075,7 +2085,7 @@ server <- function(input, output, session) {
     },
     {
       req(dataset())
-      choices <- obsNAMES(dataset())
+      choices <- obsNAMES.IQRdataGENERAL(dataset())
       conc_name <- dataset() %>%
         filter(TYPENAME=="PK") %>% 
         select(NAME) %>% 
@@ -2085,6 +2095,7 @@ server <- function(input, output, session) {
       updateSelectInput(session = getDefaultReactiveDomain(), inputId = "obs_select", choices = choices)
       shinyjs::show("obs_select", anim = T)
     })
+  
   obs_list <- eventReactive(
     {
       input$obs_select
@@ -2110,6 +2121,10 @@ server <- function(input, output, session) {
                                  select(NAME,UNIT) %>%
                                  unique %>%
                                  paste(collapse = " (") %>%
+                                 paste0(.,")")
+                               
+                               xlabel <- pkpd_data()[,str_to_title(unique(TIMEUNIT))] %>% 
+                                 paste("Time",.,sep = " (") %>%
                                  paste0(.,")")
                                
                                ggind <- 
@@ -2140,8 +2155,8 @@ server <- function(input, output, session) {
                                  #   limits = c(0, max_ticks_mad() + 14)
                                  # ) +
                                  scale_y_log10() +
-                                 xlab("Time (Days)") +
-                                 labs(y = ylabel) +
+                                 labs(x = xlabel,
+                                      y = ylabel) +
                                  scale_x_continuous(guide = guide_axis(check.overlap = TRUE)) +
                                  facet_wrap(~ `ID` + `TRTNAME Ascending`, ncol = 3) +
                                  theme(
@@ -2188,7 +2203,7 @@ server <- function(input, output, session) {
                                       pdf(tempfile())
                                       # Remove duplicate variables that are
                                       ## both time-dependent and independent
-                                      covnames <- covInfo(dataset())$COLNAME
+                                      covnames <- covInfo.IQRdataGENERAL(dataset())$COLNAME
                                       covnames <- covnames[!str_detect(covnames, "Baseline_")]
                                       covnames <- str_replace_all(covnames, "[-| ()]", "_")
                                       
@@ -2213,7 +2228,7 @@ server <- function(input, output, session) {
                                     }),
                                     "both" = ({
                                       pdf(tempfile())
-                                      covnames <- covInfo(dataset())$COLNAME
+                                      covnames <- covInfo.IQRdataGENERAL(dataset())$COLNAME
                                       covnames <- covnames[!str_detect(covnames, "Baseline_")]
                                       covnames <- str_replace_all(covnames, "[-| ()]", "_")
                                       
@@ -2244,13 +2259,13 @@ server <- function(input, output, session) {
                              ")"
                            )) +
                            annotate("text",
-                                    x = median(dataset()$TIME),
-                                    y = max(dataset()$NT),
+                                    x = max(dataset()$TIME, na.rm = T)/2,
+                                    y = max(dataset()$NT, na.rm = T),
                                     label = paste0(
                                       "r = ",
                                       signif(
-                                        x = cor(dataset()$TIME, dataset()$NT),
-                                        digits = 3
+                                        x = cor(dataset()$TIME, dataset()$NT, use = "complete.obs"),
+                                        digits = 4
                                       )
                                     )
                            )
@@ -2350,7 +2365,7 @@ server <- function(input, output, session) {
           # Amount of plots to display at once
           plot_sum <- (length(cov_list) + 1) * length(obs_list)
           cov_num <- cov_list %>%
-            subset(cov_list %in% catInfo(dataset())$COLNAME)
+            subset(cov_list %in% catInfo.IQRdataGENERAL(dataset())$COLNAME)
           cat_num <- setdiff(cov_list, cov_num) %>% length()
           plot_sum <-
             plot_sum +
@@ -2363,14 +2378,14 @@ server <- function(input, output, session) {
         if (input$plot_type == "Covariate distribution") {
           if (input$page_choiceDist == "categorical") {
             cat_amount <-
-              catInfo(dataset()) %>%
+              catInfo.IQRdataGENERAL(dataset()) %>%
               select(COLNAME) %>%
               length()
             return((cat_amount + 1) * 850) # account for TRT which is included automatically
           }
           else {
             cov_amount <-
-              covInfo(dataset()) %>%
+              covInfo.IQRdataGENERAL(dataset()) %>%
               select(COLNAME) %>%
               length()
             return(cov_amount * 1000)
@@ -2430,16 +2445,17 @@ server <- function(input, output, session) {
       input$obs_select
     },
     {
-      req(dataset, cancelOutput = TRUE)
+      req(dataset(), cancelOutput = TRUE)
+      req(input$obs_select)
+      
+      # filter only relrevant observations and rename VALUE to LIDV
       datasetLIDV <- dataset() %>%
-        filter(NAME %in% obsNAMES(dataset())) %>%
-        mutate("LIDV" = VALUE) %>% 
-        filter(NAME == input$obs_select)
+        as.data.table %>% 
+        .[NAME == input$obs_select] %>% 
+        .[, LIDV := VALUE]
+      
       # get all TRTNAME groups for sorting as a factor
-      unique_trt <- as.data.frame(datasetLIDV) %>%
-        select(TRTNAME) %>%
-        unique() %>%
-        unlist(use.names = FALSE)
+      unique_trt <- datasetLIDV[,unique(TRTNAME)]
       
       # seperate according to part (e.g., if it contains "q4wk")
       filter_by <- str_match(unique_trt, "q\\dwk") %>%
@@ -2452,59 +2468,51 @@ server <- function(input, output, session) {
         split(as.factor(filter_by)) %>%
         lapply(str_sort, numeric = TRUE, decreasing = FALSE) %>%
         unlist(use.names = FALSE)
+      
       colnames(datasetLIDV) <- colnames(datasetLIDV) %>%
         str_replace_all(., "_", " ") %>%
         str_squish()
-      orig.pkpd <- as.data.frame(datasetLIDV) %>%
-        # Adept analysis dataset for use with XgX package
-        mutate(
-          ID = USUBJID, # ID   column
-          TIME = TIME, # TIME column name, time relative to first dose
-          NOMTIME = NT, # NOMINAL TIME column name
-          EVID = EVID, # EVENT ID, >=1 is dose, otherwise measurement
-          LIDV = LIDV, # DEPENDENT VARIABLE column name
-          CENS = CENS, # CENSORING column name
-          # CMT     = CMT,    # COMPARTMENT column
-          DOSE = DOSE, # DOSE column here (numeric value)
-          TRTACT = TRTNAME, # DOSE REGIMEN column here (character, with units)
-          LIDV_NORM = LIDV / DOSE # Dose-normalized Value
-          # LIDV_UNIT    = ifelse(CMT==2, "ng/ml", NA )
-        ) %>%
-        dplyr::arrange(DOSE) %>%
-        # Create a factor for the treatment variable for plotting
-        mutate(
-          `TRTNAME Ascending` = factor(TRTACT,
-                                       levels = sorted_trt
-          ),
-          `TRTNAME Descending` = factor(TRTACT,
-                                        levels =
-                                          rev(sorted_trt)
-          )
-        ) %>%
-        plotly::select(-TRTACT) %>%
-        filter(TIME >= 0) # Filter out negative times (meaning pre-trial)
       
-      part <- attr(dataset(), "catInfo") %>%
+      # get categorical covariates
+      cat_part <- attr(dataset(), "catInfo") %>%
         filter(COLNAME != "TRT")
-      part$COLNAME <- str_replace_all(part$COLNAME, "_", " ") %>% str_squish()
+      cat_part$COLNAME <- str_replace_all(cat_part$COLNAME, "_", " ") %>% str_squish()
       
-      for (i in c(part$COLNAME)) {
-        x <- part %>%
+      cov_part <- attr(dataset(), "covInfo") %>%
+        filter(COLNAME != "TRT")
+      cov_part$COLNAME <- str_replace_all(cov_part$COLNAME, "_", " ") %>% str_squish()
+      
+      # select only relevant columns 
+      orig.pkpd <- datasetLIDV %>%
+        # add dose-normalized LIDV
+        .[,c("LIDV_NORM","ID","NOMTIME") := .(LIDV/DOSE, USUBJID, NT)] %>% 
+        # sort by DOSE
+        .[order(DOSE)] %>%
+        # add ordered TRTNAME 
+        .[,"TRTNAME Ascending" := .(factor(TRTNAME, levels = sorted_trt))] %>% 
+        .[,"TRTNAME Descending" := .(factor(TRTNAME, levels = rev(sorted_trt)))] %>% 
+        # filter out negative TIMEs
+        .[TIME>=0,]
+      
+      
+      
+      for (i in c(cat_part$COLNAME)) {
+        x <- cat_part %>%
           filter(COLNAME == i) %>%
           select(VALUES) %>%
           str_split(",") %>%
           unlist() %>%
           as.numeric()
-        y <- part %>%
+        y <- cat_part %>%
           filter(COLNAME == i) %>%
           select(VALUETXT) %>%
           str_split(",") %>%
           unlist() %>%
           str_to_title()
-        orig.pkpd[i] <- factor(orig.pkpd[i][[1]],
-                               levels = x,
-                               labels = y
-        )
+        orig.pkpd[,c(i) := factor(orig.pkpd[[i]],
+                                  levels = x,
+                                  labels = y
+        )]
       }
       
       if (length(unique(orig.pkpd$PART)) == 2) {
@@ -2517,50 +2525,47 @@ server <- function(input, output, session) {
         
         y <- c("SAD", "MAD")
         
-        orig.pkpd["PART"] <- factor(orig.pkpd["PART"][[1]],
-                                    levels = x,
-                                    labels = y
-        )
+        orig.pkpd[,c("PART") := factor(orig.pkpd[["PART"]],
+                                       levels = x,
+                                       labels = y
+        )]
       }
       
       x <- colnames(dataset()) %>% .[(str_detect(., "(?:(?i)Weight|(?i)WTBL)"))]
+      
       y <- orig.pkpd %>%
         select(x) %>%
         unlist(use.names = FALSE) %>%
         median(na.rm = TRUE)
+      
       if (!is_empty(x) & !is.null(y)) {
-        orig.pkpd[[paste0("Median ", x)]] <- 
-          factor(orig.pkpd[[x]] > y,
-                 levels = c(FALSE, TRUE),
-                 labels = c(
-                   paste0(x, "<=", y),
-                   paste0(x, ">", y)
-                 )
-          )
+        orig.pkpd[, paste0("Median ",x) := factor(orig.pkpd[[x]] > y,
+                                                  levels = c(FALSE, TRUE),
+                                                  labels = c(
+                                                    paste(x, "\U2264", y),
+                                                    paste(x, ">", y))
+        )]
       }
       
-      attr(orig.pkpd, "catInfo") <- attr(dataset(), "catInfo") # keep attributes of IQR object
       if (!is.null(orig.pkpd$WEIGHT)) {
-        orig.pkpd %<>% mutate(WEIGHTB = WEIGHT) # rename WEIGHT to WEIGHTB
-      }
-      if (!is.null(orig.pkpd$WTBL)) {
-        orig.pkpd %<>% mutate(WEIGHTB = WTBL) # rename WTBL to WEIGHTB
-      }
-      if (!is.null(orig.pkpd$Weight)) {
-        orig.pkpd %<>% mutate(WEIGHTB = Weight) # rename Weight to WEIGHTB
+        setnames(orig.pkpd,"WEIGHT", "WEIGHTB") # rename WEIGHT to WEIGHTB
+      } else if (!is.null(orig.pkpd$WTBL)) {
+        setnames(orig.pkpd,"WTBL", "WEIGHTB") # rename WTBL to WEIGHTB
+      } else if (!is.null(orig.pkpd$Weight)) {
+        setnames(orig.pkpd,"Weight", "WEIGHTB") # rename Weight to WEIGHTB
       }
       return(orig.pkpd)
     }
   )
+  
   ### convert pkpd-data to group by treatment arm --------------------------------------------------------
   pk_data_rep_by_trt <- reactive({
     c_pkpd_data <- pkpd_data()
     pk_data_rep_by_trt <- list()
     for (id in unique(c_pkpd_data$ID)) {
-      indiv_data <- c_pkpd_data %>% subset(ID == id)
-      itrtact <- unique(indiv_data$`TRTNAME Ascending`)
+      itrtact <- c_pkpd_data[ID == id,unique(`TRTNAME Ascending`)]
       pk_data_rep_by_trt[[as.character(id)]] <- c_pkpd_data %>%
-        subset(`TRTNAME Ascending` == itrtact) %>%
+        filter(`TRTNAME Ascending` == itrtact) %>%
         mutate(ID_rep_by_trt = ID, ID = id)
     }
     pk_data_rep_by_trt <- bind_rows(pk_data_rep_by_trt)
@@ -2795,6 +2800,7 @@ server <- function(input, output, session) {
             ),
             actionButton(
               inputId = "goto_qc",
+              icon = icon("file-pen"),
               label = "Switch to report tab",
               `data-dismiss` = "modal"
             )
@@ -2803,6 +2809,17 @@ server <- function(input, output, session) {
           DTOutput("pk_anom_review")
         )
       )
+    }
+  )
+  
+  observeEvent(
+    {
+      input$qc_return
+    },
+    {
+      updateTabItems(session, "tabs", "qc_tab")
+      updateTabItems(session, "qc_subtabs", "Spec Upload")
+      removeModal()
     }
   )
   
@@ -2907,7 +2924,7 @@ server <- function(input, output, session) {
   outputOptions(output,"rep_review", suspendWhenHidden = TRUE)
   ### upload and generate QC report ----------------------------------------------------
   output$report_upload_button <- renderUI({
-    req(input$file_path)
+    req(input$spec_file)
     actionButton(
       inputId = "report_upload",
       label = "Upload existing report",
