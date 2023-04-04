@@ -2330,13 +2330,13 @@ server <- function(input, output, session) {
   observe({
     output$dataplot <- renderPlot(
       { # Render a plot according to user's choice
-        if (is.null(input$file_path) || is.null(input$plot_type) || input$plot_type == "" || is.null(cur_plot())) {
+        if (is.null(input$file_path) || is.null(input$plot_type) || input$plot_type == "" || is.null(cur_plot()) || class(cur_plot())[1] == "try-error") {
           hide("condit_download_bttn")
           return(NULL)
         } else {
           rv_plot$title <- input$plot_type
           show("condit_download_bttn")
-          return(cur_plot())
+          return(print(cur_plot()))
         }
       },
       height = function() {
