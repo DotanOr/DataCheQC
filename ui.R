@@ -393,9 +393,27 @@ ui <- dashboardPage(
                                           placeholder = "No file selected",
                                           accept = c(".docx", ".xlsx")
                                         ),
-                                        uiOutput("switch_to_value"),
-                                        uiOutput("opt_filter_flag"),
-                                        uiOutput("pmxian_filter_flag"),
+                                        hidden(
+                                          checkboxInput(
+                                            inputId = "event_table_switch",
+                                            label = "Switch to event table",
+                                            value = FALSE,
+                                            width = "195px"
+                                          )),
+                                        hidden(
+                                          tagList(
+                                            checkboxInput(
+                                              inputId = "opt_flag",
+                                              label = "Filter optional variables",
+                                              value = FALSE,
+                                              width = "195px"
+                                            ),
+                                            checkboxInput(
+                                              inputId = "pmxian_flag",
+                                              label = "Filter variables requiring input from the pharmacometrician",
+                                              value = FALSE,
+                                              width = "195px"
+                                            ))),
                                         uiOutput("add_selected"),
                                         uiOutput("align_columns"),
                                         uiOutput("review_nas_button"),
@@ -440,7 +458,12 @@ ui <- dashboardPage(
                   placement = "right",
                   title = "Ensure that the dataset matches the specification and look for any missing/N.A. values.\nClick on any row(s) in the table to select and reveal more options about them.")
               ),
-              uiOutput("column_choose"),
+              hidden(selectInput(
+                inputId = "col_choose",
+                label = "Choose column(s) to examine:",
+                choices = "",
+                multiple = TRUE
+              )),
               withSpinner(dataTableOutput("data_cols"), type = 5), 
               dataTableOutput("spec_cols")
             )
@@ -551,8 +574,10 @@ ui <- dashboardPage(
                               tagAppendAttributes(style = "cursor: default;"), type = 5),
                 conditionalPanel(
                   condition = "input.spagind_choice && output.anoms_review_button == true",
-                  actionButton("anoms_review", label = "Review flagged subjects") %>% 
-                    tagAppendAttributes(style = "position: absolute; top: 95px; right: 30px; margin-top: 5px;")
+                  actionButton("anoms_review", 
+                               width = "11vw",
+                               label = "Review flagged subjects") %>% 
+                    tagAppendAttributes(style = "position: absolute; top: 95px; right: 0.6vw; margin-top: 5px;")
                 ),
                 bsAlert("list_alert")
               ), # End of tabPanel
