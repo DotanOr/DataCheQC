@@ -116,7 +116,7 @@ server <- function(input, output, session) {
     if (ext == "csv") {
       mydata <- data.table::fread(path(), stringsAsFactors = FALSE)
     } else if (ext == "sas7bdat") {
-      mydata <- read_sas(path())
+      mydata <- read_sas(path()) %>% data.table::as.data.table()
     } else {
       showNotification("File type isn't .csv or .sas7bdat; please try a different file", duration = NULL, type = "error")
     }
@@ -131,6 +131,7 @@ server <- function(input, output, session) {
       # make sure that the error message is removed if the user fixed the error
       removeNotification(id = "err_dataset")
     }
+    rv_dat$opts <- mydata[TYPENAME != "Adverse Event", sort(unique(NAME))]
     return(mydata)
   })
   
@@ -140,18 +141,9 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
-    opts <- mydata() %>%
-      filter(TYPENAME != "Adverse Event") %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE) %>%
-      sort()
+    opts <- rv_dat$opts
     
-    auto_opts <-
-      mydata()$NAME %>%
-      unique() %>%
-      str_detect(., "(?i)Dose") %>%
-      unique(mydata()$NAME)[.]
+    auto_opts <- opts[which(str_detect(opts, "(?i)Dose"))]
     
     selectInput("doseIn",
                 multiple = TRUE,
@@ -165,24 +157,11 @@ server <- function(input, output, session) {
     if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
-    opts <- mydata() %>%
-      filter(TYPENAME != "Adverse Event") %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE) %>%
-      sort()
+    opts <- rv_dat$opts
     
-    auto_opts <-
-      mydata() %>% 
-      filter(str_detect(TYPENAME, "PK")) %>% 
-      select(NAME) %>% 
-      unique() %>% 
-      unlist(F,F)
-    pd_opts <- mydata() %>%
-      filter(str_detect(TYPENAME, "PD")) %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
+    auto_opts <-mydata()[TYPENAME == "PK", sort(unique(NAME))]
+    pd_opts <- mydata()[TYPENAME == "PD", sort(unique(NAME))]
+    
     auto_opts <- append(auto_opts, pd_opts)
     
     selectInput("obsIn",
@@ -197,32 +176,20 @@ server <- function(input, output, session) {
     if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
-    opts <- mydata() %>%
-      select(NAME, TYPENAME) %>%
-      filter(TYPENAME != "Adverse Event") %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
-    
-    auto_opts <- mydata() %>%
-      filter(str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, "((?i)^Age|(?i)^Weight|(?i)^BMI|(?i)^Height)")) %>%
-      group_by(TYPENAME,NAME,USUBJID) %>%
-      summarise(Value = length(unique(VALUE)),Text = length(unique(VALUETXT))) %>% 
-      filter(all(Value <= 1) & (str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, "((?i)^Age|(?i)^Weight|(?i)^BMI|(?i)^Height)"))) %>% 
-      ungroup %>% 
-      select(NAME) %>% 
-      unique %>% 
-      unlist(use.names = FALSE) %>% 
+    opts <- rv_dat$opts
+    covs <- c("Age", "Weight", "BMI", "Height") %>% paste0("(?i)^",.,collapse = "|") %>% paste0("(",.,")")
+    auto_condition <- quote(str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, covs))
+    auto_opts <- mydata()[eval(auto_condition), 
+                          .(Value = length(unique(VALUE)), Text = length(unique(VALUETXT))),
+                          by = c("TYPENAME","NAME","USUBJID")][,
+                                                               list(check = all(Value <= 1) & (eval(auto_condition))),
+                                                               by = list(TYPENAME,NAME)][
+                                                                 (check), sort(unique(NAME))] %>% 
       as.character() %>% 
       give_own_name() %>% 
       .[.!="character(0)"] 
     
-    base_pd <- mydata() %>%
-      filter(str_detect(TYPENAME, "PD")) %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE) %>%
-      paste0("Baseline ", .)
+    base_pd <- mydata()[str_detect(TYPENAME, "PD"), paste("Baseline", sort(unique(NAME)))]
     
     auto_opts <- append(auto_opts, base_pd)
     opts <- append(opts, base_pd)
@@ -239,22 +206,15 @@ server <- function(input, output, session) {
     if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
-    opts <- mydata() %>%
-      select(NAME, TYPENAME) %>%
-      filter(TYPENAME != "Adverse Event") %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
-    
-    auto_opts <- mydata() %>%
-      filter(str_detect(TYPENAME, "(?i)categorical") | str_detect(NAME, "((?i)^Sex|(?i)^Race|(?i)^Gender|(?i)^Ethnic|(?i)^Health status$)")) %>%
-      group_by(TYPENAME,NAME,USUBJID) %>%
-      summarise(Value=length(unique(VALUE)),Text=length(unique(VALUETXT))) %>% 
-      filter(all(Value <= 1) & (str_detect(TYPENAME, "(?i)categorical") | str_detect(NAME, "((?i)^Sex|(?i)^Race|(?i)^Gender|(?i)^Ethnic|(?i)^Health status$)"))) %>% 
-      ungroup %>% 
-      select(NAME) %>% 
-      unique %>% 
-      unlist(use.names = FALSE) %>% 
+    opts <- rv_dat$opts
+    cats <- c("Sex","Race","Gender","Ethnic","Health status") %>% paste0("(?i)^",.,collapse = "|") %>% paste0("(",.,"$)")
+    auto_condition <- quote(str_detect(TYPENAME, "(?i)categorical") | str_detect(NAME, cats))
+    auto_opts <- mydata()[eval(auto_condition), 
+                          .(Value = length(unique(VALUE)), Text = length(unique(VALUETXT))),
+                          by = c("TYPENAME","NAME","USUBJID")][,
+                                                               list(check = all(Value <= 1) & (eval(auto_condition))),
+                                                               by = list(TYPENAME,NAME)][
+                                                                 (check), sort(unique(NAME))] %>% 
       as.character() %>% 
       give_own_name() %>% 
       .[.!="character(0)"]
@@ -271,22 +231,15 @@ server <- function(input, output, session) {
     if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
-    opts <- mydata() %>%
-      select(NAME, TYPENAME) %>%
-      filter(TYPENAME != "Adverse Event") %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
-    
-    auto_opts <-
-      mydata() %>%
-      group_by(TYPENAME,NAME,USUBJID) %>%
-      summarise(Value = length(unique(VALUE)), Text = length(unique(VALUETXT))) %>% 
-      filter(any(Value > 1) & (str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, "((?i)^Age|(?i)^Weight|(?i)^BMI|(?i)^Height)"))) %>% 
-      ungroup %>% 
-      select(NAME) %>% 
-      unique %>% 
-      unlist(use.names = FALSE) %>% 
+    opts <- rv_dat$opts
+    covs <- c("Age", "Weight", "BMI", "Height") %>% paste0("(?i)^",.,collapse = "|") %>% paste0("(",.,")")
+    auto_condition <- quote(str_detect(TYPENAME, "(?i)continuous") | str_detect(NAME, covs))
+    auto_opts <- mydata()[eval(auto_condition), 
+                          .(Value = length(unique(VALUE)), Text = length(unique(VALUETXT))),
+                          by = c("TYPENAME","NAME","USUBJID")][,
+                                                               list(check = all(Value > 1) & (eval(auto_condition))),
+                                                               by = list(TYPENAME,NAME, USUBJID)][
+                                                                 (check), sort(unique(NAME))] %>% 
       as.character() %>% 
       give_own_name() %>% 
       .[.!="character(0)"] 
@@ -303,25 +256,18 @@ server <- function(input, output, session) {
     if (is.null(input$file_path) | is.null(mydata())) {
       return(NULL)
     }
-    opts <- mydata() %>%
-      select(NAME, TYPENAME) %>%
-      filter(TYPENAME != "Adverse Event") %>%
-      select(NAME) %>%
-      unique() %>%
-      unlist(use.names = FALSE)
-    
-    auto_opts <-
-      mydata() %>%
-      group_by(TYPENAME,NAME,USUBJID) %>%
-      summarise(Value=length(unique(VALUE)),Text=length(unique(VALUETXT))) %>% 
-      filter(any(Value > 1) & (TYPENAME %>% str_detect("(?i)categorical") | str_detect(NAME, "((?i)^Sex|(?i)^Race|(?i)^Gender|(?i)^Ethnic|(?i)^Health status$)"))) %>% 
-      ungroup %>% 
-      select(NAME) %>% 
-      unique %>% 
-      unlist(use.names = FALSE) %>% 
+    opts <- rv_dat$opts
+    cats <- c("Sex","Race","Gender","Ethnic","Health status") %>% paste0("(?i)^",.,collapse = "|") %>% paste0("(",.,"$)")
+    auto_condition <- quote(str_detect(TYPENAME, "(?i)categorical") | str_detect(NAME, cats))
+    auto_opts <- mydata()[eval(auto_condition), 
+                          .(Value = length(unique(VALUE)), Text = length(unique(VALUETXT))),
+                          by = c("TYPENAME","NAME","USUBJID")][,
+                                                               list(check = all(Value > 1) & (eval(auto_condition))),
+                                                               by = list(TYPENAME, NAME, USUBJID)][
+                                                                 (check), sort(unique(NAME))] %>% 
       as.character() %>% 
       give_own_name() %>% 
-      .[.!="character(0)"] 
+      .[.!="character(0)"]
     
     depCatCovIn <- selectInput("depcatcovIn",
                                multiple = TRUE,
@@ -516,7 +462,7 @@ server <- function(input, output, session) {
                 catT = dep_cat_cov
               ),
               message = function(m) {
-                progress$inc(1 / 22, detail = glue::glue("{str_replace(str_trim(m$message),'JID,','JID, \n')}..."))
+                progress$inc(1 / 22, detail = paste0(str_replace(str_trim(m$message),'JID,','JID, \n'),"..."))
               },
               error = function(e) {
                 progress$inc(20/22, detail = paste0(str_sub(e$message,end = 40),"..."), message = "Error! \n")
@@ -1003,20 +949,16 @@ server <- function(input, output, session) {
     }
     
     # get summary of values from the dataset
-    if (isTruthy(spec_path()) & isTruthy(col_choose_d())) {
-      if (isolate(input$event_table_switch)) { # for variables derived from the NAME-VALUE-VALUETXT columns
+    if (!is.null(spec_path()) & !is.null(col_choose_d())) {
+      if (input$event_table_switch) { # for variables derived from the NAME-VALUE-VALUETXT columns
         table <- c()
         for (i in req(col_choose_d())) {
-          i_type <- mydata() %>%
-            filter(NAME %in% i) %>%
-            select(TYPENAME) %>%
-            unique() %>%
-            unlist(F, F)
+          i_type <- mydata()[NAME %in% i, unique(TYPENAME)]
           if (is_empty(i_type)){
             next
           }
           if (str_detect(i_type, "(?i)categorical|(?i)dose") |
-              mydata() %>% filter(NAME == i) %>% filter(!is.na(VALUETXT) && !is.null(VALUETXT) && VALUETXT != "" && VALUETXT != ".") %>% dim(.) %>% is_greater_than(0) %>% all() 
+              all(dim(mydata()[NAME == i & !is.na(VALUETXT) & !is.null(VALUETXT) & VALUETXT != "" & VALUETXT != "."]) > 0)
           ) {
             if (str_detect(i_type, "(?i)dose")) {
               param <- "VALUE"
@@ -1027,92 +969,96 @@ server <- function(input, output, session) {
               sepr <- "|"
             }
             current <-
-              mydata() %>%
-              filter(NAME == i) %>%
-              select(c(VALUE,VALUETXT, UNIT)) %>%
-              .[,.(Variable = i,
-                   `Number of NAs` = sum(is.na(param), na.rm = T),
-                   `Number of Blanks` = sum(param == "" | param == ".", na.rm = T),
-                   Unit = ifelse(
-                     str_detect(i_type, "(?i)dose"),
-                     unique(UNIT),
-                     ""
-                   ))] %>%
-              .[,Values := paste(
-                mydata() %>%
-                  filter(NAME == i) %>%
-                  .[order(VALUE)] %>% 
-                  select(VALUETXT) %>%
-                  unique() %>%
-                  as.character() %>% 
-                  str_replace_all("^.$",""),
-                sepr,
-                mydata() %>%
-                  filter(NAME == i) %>%
-                  .[order(VALUE)] %>% 
-                  select(VALUE) %>%
-                  unique() %>%
-                  {
-                    if_else(nrow(.) >= 10 & sapply(., is.numeric),
-                            paste(range(., na.rm = T), collapse = "-"),
-                            as.character(.))
-                  }
-              ) %>% str_trim]
+              mydata()[NAME == i, .(VALUE,VALUETXT,UNIT)
+              ][,
+                .(Variable = i,
+                  `Number of NAs` = sum(is.na(param), na.rm = T),
+                  `Number of Blanks` = sum(param == "" | param == ".", na.rm = T),
+                  Unit = ifelse(
+                    str_detect(i_type, "(?i)dose"),
+                    unique(UNIT),
+                    ""
+                  )
+                )
+              ][, 
+                Values := paste(
+                  mydata()[NAME == i
+                  ][
+                    order(VALUE), unique(VALUETXT)
+                  ] %>% 
+                    as.character() %>% 
+                    str_replace_all("^.$","") %>% 
+                    {
+                      ifelse(. == "", 
+                              "", 
+                              deparse(.))
+                    } %>% unique,
+                  sepr,
+                  mydata()[NAME == i
+                  ][
+                    order(VALUE), unique(VALUE)] %>%
+                    {
+                      ifelse(length(.) >= 10 & sapply(., is.numeric),
+                              paste(range(., na.rm = T), collapse = "-"),
+                              deparse(.))
+                    } %>% unique
+                ) %>% str_trim
+              ]
           }
           else {
             current <-
-              mydata() %>%
-              filter(NAME %in% i) %>%
-              select(VALUE, UNIT) %>%
-              .[,.(
-                Variable = i,
-                `Values` = paste(range(VALUE, na.rm = T), collapse = "-"),
-                `Number of NAs` = sum(is.na(VALUE), na.rm = T),
-                `Number of Blanks` = sum(VALUE == "" | VALUE == ".", na.rm = T),
-                Unit = unique(UNIT)
-              )] %>%
-              .[, Values := as.character(Values)]
+              mydata()[NAME %in% i, .(VALUE,UNIT)
+              ][,
+                .(
+                  Variable = i,
+                  `Values` = paste(range(VALUE, na.rm = T), collapse = "-"),
+                  `Number of NAs` = sum(is.na(VALUE), na.rm = T),
+                  `Number of Blanks` = sum(VALUE == "" | VALUE == ".", na.rm = T),
+                  Unit = unique(UNIT)
+                )
+              ][,
+                Values := as.character(Values)
+              ]
           }
-          current <- current %>% select(Variable, Values, Unit, `Number of NAs`, `Number of Blanks`)
+          current <- current[, .(Variable, Values, Unit, `Number of NAs`, `Number of Blanks`)]
           table <- rbind(table, current)
         }
-        table
+        return(table)
       }
       else {
-        #for other columns from the dataset that aren't NAME/VALUE/VALUETXT
-        cols_tab <- col_choose_d()[col_choose_d() %in% names(mydata())]
+        #get cols from dataset
+        cols_tab <- intersect(col_choose_d(), names(mydata()))
         if (!is_empty(cols_tab)) {
-          try(
-            mydata() %>%
-              select(any_of(cols_tab)) %>%
-              summarize(
-                `Variable` = cols_tab,
-                `Unique Values` =
-                  lapply(cols_tab, select,
-                         .data = mydata() %>% as.data.frame()
-                  ) %>%
-                  lapply(unique) %>%
-                  unlist(recursive = FALSE),
-                `Number of Unique Values` = sapply(`Unique Values`, length),
-                Type = sapply(`Unique Values`, class) %>% str_to_sentence(),
-                `Number of NAs` = sapply(X = cols_tab, FUN = function(x) sum(is.na(mydata()[[x]]), na.rm = T)),
-                `Number of Blanks` = sapply(X = cols_tab, FUN = function(x) sum(mydata()[[x]] == "", na.rm = T))
-              ) %>%
-              mutate(`Unique Values` = `Unique Values` %>% as.character()) %>%
-              mutate(
-                `Unique Values` =
-                  ifelse(
-                    # if the vector is longer than 100 and contains commas
-                    sapply(`Unique Values`, function(x) str_length(x) >= 100 && !is.na(str_locate(x, ","))),
-                    # find the comma that's nearest to 100 and shorten the vector to that length
-                    str_sub(`Unique Values`, 1, str_locate_all(`Unique Values`, ",") %>% lapply(function(y) y[y <= 100] %>% max(na.rm = T))) %>%
-                      # then add an ellipsis (...) to it for good measure
-                      paste(., "...)"),
-                    `Unique Values`
-                  )
-              ),
+          table <- try(
+            mydata()[,..cols_tab
+            ][,
+              .(`Variable` = cols_tab,
+                `Unique Values` = lapply(.SD, function(x) unique(x)),
+                `Number of Unique Values` = lapply(.SD, function(x) length(unique(x))),
+                Type = lapply(.SD, function(x) str_to_sentence(class(x))),
+                `Number of NAs` = lapply(.SD, function(x) sum(is.na(x))),
+                `Number of Blanks` = lapply(.SD, function(x) sum(x == "" & !is.na(x)))
+              )
+            ][,
+              `Unique Values` := as.character(`Unique Values`)
+            ][, 
+              `Unique Values` :=
+                ifelse(
+                  # if the vector is longer than 100 and contains commas
+                  sapply(.SD, function(x) str_length(x) >= 100 && !is.na(str_locate(x, ","))),
+                  # find the comma that's nearest to 100 and shorten the vector to that length
+                  str_sub(.SD, 1, str_locate_all(.SD, ",") %>% sapply(function(y) max(y[y <= 100]))) %>%
+                    # then add an ellipsis (...) to it for good measure
+                    paste(., "...)"),
+                  .SD
+                ),
+              by = 'Variable',
+              .SDcols = "Unique Values"
+            ],
             silent = TRUE
-          ) %>% suppressWarnings()}
+          )
+          return(table)
+        }
       }
     }
   })
@@ -1137,32 +1083,22 @@ server <- function(input, output, session) {
       # function to mark duplicated rows in red (e.g., if they have different units for the same variable)
       ## and mark rows with multiple NA/Blank values in yellow
       createdRow = JS(
-        glue::glue('function(row, data, index) {
-                        let conditions = [{{
-                        ifelse(isTruthy(data_cols_table()),
-                        data_cols_table() %>%
-                        group_by(Variable) %>%
-                        summarise(n=n()) %>%
-                        filter(n>1) %>%
-                        select("Variable") %>%
-                        unlist(F,F) %>%
-                        lapply(function (x) paste0("\'",x,"\'")) %>%
-                        paste(collapse = ","),
-                        "")
-                        }}]
-                        
-                        let na_num_col = {{names(data_cols_table()) %>% str_which("Number of NAs")}} - 1
-                        let blank_num_col = {{names(data_cols_table()) %>% str_which("Number of Blanks")}} - 1 
-                        
-                        if (conditions.some(el => data[0].includes(el))) {
-                          $(row).css("background-color", "#ee232373");
-                        }
-                        else if ((data[na_num_col] > 0 & data[na_num_col] < 100) | (data[blank_num_col] > 0 & data[blank_num_col] < 100)) {
-                          $(row).css("background-color", "#ddc51854")
-                        }
-                      }',
-                   .open = "{{",
-                   .close = "}}"
+        paste0('function(row, data, index) {
+                   let conditions = [',
+               data_cols_table()[,.N, by = Variable][N > 1, Variable] %>%
+                 lapply(function (x) paste0("\'",x,"\'")) %>%
+                 paste(collapse = ","),']
+                   
+                   let na_num_col = ', which(names(data_cols_table()) == "Number of NAs") - 1,'
+                   let blank_num_col = ', which(names(data_cols_table()) == "Number of Blanks") - 1,'
+                   
+                   if (conditions.some(el => data[0].includes(el))) {
+                   $(row).css("background-color", "#ee232373");
+                   }
+                   else if ((data[na_num_col] > 0 & data[na_num_col] < 100) | (data[blank_num_col] > 0 & data[blank_num_col] < 100)) {
+                   $(row).css("background-color", "#ddc51854")
+                   }
+        }'
         )
       )
     ),
@@ -1195,21 +1131,18 @@ server <- function(input, output, session) {
                {
                  runjs(
                    HTML(
-                     glue::glue('// change the color of items that are not present in the dataset to red and in italics
-                        let unpresent_cols = "{{
-                        col_choose_d()[!col_choose_d() %in% c(names(mydata()), unique(mydata()$NAME))] %>%
-                        lapply(function(x) paste("^",x,"$", sep = "")) %>%  
-                        paste(collapse = "|")
-                        }}"
+                     paste0('// change the color of items that are not present in the dataset to red and in italics
+                                let unpresent_cols = "',
+                            col_choose_d()[!col_choose_d() %in% c(names(mydata()), unique(mydata()$NAME))] %>%
+                              lapply(function(x) paste("^",x,"$", sep = "")) %>%  
+                              paste(collapse = "|"),'"
                         if (unpresent_cols)
-                        {
-                          let items = $("#col_choose +").children().children(`div.item:regex(${unpresent_cols})`);
-                          items.css("color", "red").css("font-style","italic");
-                        }
-                        ', 
-                                .open = "{{",
-                                .close = "}}"
-                     ),
+                                {
+                                let items = $("#col_choose +").children().children(`div.item:regex(${unpresent_cols})`);
+                                items.css("color", "red").css("font-style","italic");
+                                }
+                                '
+                     )
                    )
                  )
                })
@@ -1505,7 +1438,7 @@ server <- function(input, output, session) {
              "Sampling schedule" = "Things to look for:\\nWhether subjects were sampled as detailed in the study protocol(s)"
       )
     # update the tooltip
-    runjs(glue("$('#iconic_par').attr('title','{tooltip_title}').tooltip('fixTitle')"))
+    runjs(paste0("$('#iconic_par').attr('title','", tooltip_title, "').tooltip('fixTitle')"))
   })
   ### Show sampling schedule------------------------------------------
   rv_samp <- reactiveValues(last_id = 0)
