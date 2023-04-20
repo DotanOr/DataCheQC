@@ -990,8 +990,8 @@ server <- function(input, output, session) {
                     str_replace_all("^.$","") %>% 
                     {
                       ifelse(. == "", 
-                              "", 
-                              deparse(.))
+                             "", 
+                             deparse(.))
                     } %>% unique,
                   sepr,
                   mydata()[NAME == i
@@ -999,8 +999,8 @@ server <- function(input, output, session) {
                     order(VALUE), unique(VALUE)] %>%
                     {
                       ifelse(length(.) >= 10 & sapply(., is.numeric),
-                              paste(range(., na.rm = T), collapse = "-"),
-                              deparse(.))
+                             paste(range(., na.rm = T), collapse = "-"),
+                             deparse(.))
                     } %>% unique
                 ) %>% str_trim
               ]
@@ -2269,7 +2269,7 @@ server <- function(input, output, session) {
         } else {
           rv_plot$title <- input$plot_type
           show("condit_download_bttn")
-          return(print(cur_plot()))
+          return(cur_plot())
         }
       },
       height = function() {
@@ -2384,8 +2384,10 @@ server <- function(input, output, session) {
       # filter only relrevant observations and rename VALUE to LIDV
       datasetLIDV <- dataset() %>%
         as.data.table %>% 
-        .[NAME == input$obs_select] %>% 
-        .[, LIDV := VALUE]
+        {
+          .[NAME == input$obs_select
+          ][,LIDV := VALUE]
+        }
       
       # get all TRTNAME groups for sorting as a factor
       unique_trt <- datasetLIDV[,unique(TRTNAME)]
@@ -2416,16 +2418,20 @@ server <- function(input, output, session) {
       cov_part$COLNAME <- str_replace_all(cov_part$COLNAME, "_", " ") %>% str_squish()
       
       # select only relevant columns 
-      orig.pkpd <- datasetLIDV %>%
-        # add dose-normalized LIDV
-        .[,c("LIDV_NORM","ID","NOMTIME") := .(LIDV/DOSE, USUBJID, NT)] %>% 
-        # sort by DOSE
-        .[order(DOSE)] %>%
-        # add ordered TRTNAME 
-        .[,"TRTNAME Ascending" := .(factor(TRTNAME, levels = sorted_trt))] %>% 
-        .[,"TRTNAME Descending" := .(factor(TRTNAME, levels = rev(sorted_trt)))] %>% 
-        # filter out negative TIMEs
-        .[TIME>=0,]
+      orig.pkpd <- datasetLIDV[,
+                               # add dose-normalized LIDV
+                               c("LIDV_NORM","ID","NOMTIME") := .(LIDV/DOSE, USUBJID, NT)][ 
+                                 # sort by DOSE
+                                 order(DOSE)
+                               ][,
+                                 # add ordered TRTNAME 
+                                 "TRTNAME Ascending" := .(factor(TRTNAME, levels = sorted_trt))
+                               ][, 
+                                 "TRTNAME Descending" := .(factor(TRTNAME, levels = rev(sorted_trt)))
+                               ][
+                                 # filter out negative TIMEs
+                                 TIME >= 0,
+                               ]
       
       
       
@@ -2464,29 +2470,21 @@ server <- function(input, output, session) {
         )]
       }
       
+      # add median WEIGHT as a factor column
       x <- colnames(dataset()) %>% .[(str_detect(., "(?:(?i)Weight|(?i)WTBL)"))]
       
-      y <- orig.pkpd %>%
-        select(x) %>%
-        unlist(use.names = FALSE) %>%
-        median(na.rm = TRUE)
-      
-      if (!is_empty(x) & !is.null(y)) {
-        orig.pkpd[, paste0("Median ",x) := factor(orig.pkpd[[x]] > y,
-                                                  levels = c(FALSE, TRUE),
-                                                  labels = c(
-                                                    paste(x, "\U2264", y),
-                                                    paste(x, ">", y))
-        )]
+      if (!is_empty(x)){
+        y <- orig.pkpd[, median(get(x), na.rm = T)]
+        if (!is.null(y)){
+          orig.pkpd[, paste0("Median ",x) := factor(orig.pkpd[[x]] > y,
+                                                    levels = c(FALSE, TRUE),
+                                                    labels = c(
+                                                      paste(x, "\U2264", y),
+                                                      paste(x, ">", y))
+          )]
+        }
       }
       
-      if (!is.null(orig.pkpd$WEIGHT)) {
-        setnames(orig.pkpd,"WEIGHT", "WEIGHTB") # rename WEIGHT to WEIGHTB
-      } else if (!is.null(orig.pkpd$WTBL)) {
-        setnames(orig.pkpd,"WTBL", "WEIGHTB") # rename WTBL to WEIGHTB
-      } else if (!is.null(orig.pkpd$Weight)) {
-        setnames(orig.pkpd,"Weight", "WEIGHTB") # rename Weight to WEIGHTB
-      }
       return(orig.pkpd)
     }
   )
@@ -2496,10 +2494,11 @@ server <- function(input, output, session) {
     c_pkpd_data <- pkpd_data()
     pk_data_rep_by_trt <- list()
     for (id in unique(c_pkpd_data$ID)) {
-      itrtact <- c_pkpd_data[ID == id,unique(`TRTNAME Ascending`)]
-      pk_data_rep_by_trt[[as.character(id)]] <- c_pkpd_data %>%
-        filter(`TRTNAME Ascending` == itrtact) %>%
-        mutate(ID_rep_by_trt = ID, ID = id)
+      itrtact <- c_pkpd_data[ID == id, unique(`TRTNAME Ascending`)]
+      pk_data_rep_by_trt[[as.character(id)]] <- c_pkpd_data[`TRTNAME Ascending` == itrtact
+      ][,
+        `:=`(ID_rep_by_trt = ID, ID = id)
+      ]
     }
     pk_data_rep_by_trt <- bind_rows(pk_data_rep_by_trt)
     return(pk_data_rep_by_trt)
@@ -2672,14 +2671,13 @@ server <- function(input, output, session) {
       if (input$spagind_choice) {
         past_length <- length(report_columns$reporta$Subject)
         if (anyDuplicated(c(report_columns$reporta$Subject, input$sad_dblc$panelvar2)) == 0) {
-          sub_trt <-
-            mydata() %>%
-            select(USUBJID, TRTNAME) %>%
-            unique.array() %>%
-            as.data.frame() %>%
-            filter(USUBJID == input$sad_dblc$panelvar2) %>%
-            select(TRTNAME) %>%
-            unlist(F, F)
+          sub_trt <- mydata()[
+            USUBJID == input$sad_dblc$panelvar2,
+            unique(.SD),
+            .SDcols = "TRTNAME",
+            by = USUBJID
+          ][,TRTNAME]
+          
           report_columns$reporta <<- add_row(report_columns$reporta,
                                              Subject = input$sad_dblc$panelvar2,
                                              Observation = input$obs_select,
