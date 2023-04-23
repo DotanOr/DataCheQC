@@ -2733,7 +2733,7 @@ server <- function(input, output, session) {
             actionButton(
               inputId = "goto_qc",
               icon = icon("file-pen"),
-              label = "Switch to report tab",
+              label = "Switch to Report Tab",
               `data-dismiss` = "modal"
             )
           ),
