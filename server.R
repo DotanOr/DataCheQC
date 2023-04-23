@@ -890,7 +890,7 @@ server <- function(input, output, session) {
     }
     
     # check if all columns are present in the spec file
-    req_col_tables <- c("Name","Type","Label", "Required / Optional","PMXian input","Comments")
+    req_col_tables <- c("Name","Type","Label", "Comments")
     req_val_tables <- c("NAME","VALUE","VALUETEXT","UNIT","TYPENAME","LLOQ")
     
     column_specs <- tables[[1]]
@@ -910,14 +910,15 @@ server <- function(input, output, session) {
       removeNotification(id = "err_event_table")
     }
     
-    if (input$opt_flag & input$pmxian_flag) {
+    # filter the selectable options according to user input and if the necessary columns exist (Req/Opt and PMXian Input)
+    if (input$opt_flag & input$pmxian_flag & any(str_detect(names(column_specs), "(?i)Req")) & any(str_detect(names(column_specs), "(?i)PMXian.input|(?i)Pharmacometrician.input"))) {
       column_specs <- column_specs %>% 
         filter(if_any(contains("Req"), ~ str_detect(.,"(?i)Req")) & if_any(contains("PMXian.input"), ~ . != "No"))
     }
-    else if (input$opt_flag == TRUE) {
+    else if (input$opt_flag == TRUE & any(str_detect(names(column_specs), "(?i)Req"))) {
       column_specs <- column_specs %>% filter(if_any(contains("Req"), ~ str_detect(.,"(?i)Req")))
     }
-    else if (input$pmxian_flag == TRUE) {
+    else if (input$pmxian_flag == TRUE & any(str_detect(names(column_specs), "(?i)PMXian.input|(?i)Pharmacometrician.input"))) {
       column_specs <- column_specs %>% filter(if_any(contains("PMXian.input"), ~ . != "No"))
     }
     
