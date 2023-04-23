@@ -2269,7 +2269,7 @@ server <- function(input, output, session) {
           return(NULL)
         } else {
           rv_plot$title <- input$plot_type
-          show("condit_download_bttn")
+          shinyjs::show("condit_download_bttn")
           return(cur_plot())
         }
       },
