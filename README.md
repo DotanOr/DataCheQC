@@ -21,9 +21,7 @@ to try to resolve this issue.
 # Getting Started
 
 Check out the [official DataCheQC documentation](dotanor.github.io/DataCheQC/) to get acquainted with the app's features, interface and more!
-
-
-<br>      
+   
       
 # The QC Workflow
 
