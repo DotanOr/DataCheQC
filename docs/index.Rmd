@@ -32,7 +32,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 ### Data Handling
 
--   Automatic detection of doses, observations, and covariates
+-   Automatic detection of doses, observations, and covariates  
 -   Impute missing continuous covariate values
 -   Run data cleaning functions on the dataset
 
