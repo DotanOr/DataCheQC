@@ -94,6 +94,6 @@ Alternatively, you can download the code as a .zip archive and extract the files
 shiny::runApp("path/to/directory")
 ```
 
-\ 
+\  
 \ 
 \  
