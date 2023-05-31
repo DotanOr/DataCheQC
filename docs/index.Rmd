@@ -13,7 +13,9 @@ knitr::opts_chunk$set(echo = T, eval = F)
 ## Overview
 ***
 > **DataCheQC** is an interactive application based on the **R Shiny** framework developed for the purposes of performing quality control (QC) checks on pharmacometrics datasets, and thereby supporting the implementation of model-informed drug development.   
+>
 Features include visual inspection of variables and data entries for errors and/or anomalies, and ensuring structural integrity through comparison with a dataset specification file.
+>
 The open-source app, which requires no programming knowledge to operate, also allows the user to collect all findings into a summary report which can be downloaded directly from the app.
 
 ## The QC Workflow
@@ -72,3 +74,6 @@ Alternatively, you can download the code as a .zip archive and extract the files
 ```{r eval=FALSE, results='asis'}
 shiny::runApp("path/to/directory")
 ```
+  
+\    
+\    
