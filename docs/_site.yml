@@ -1,0 +1,9 @@
+name: "DataCheQC"
+navbar:
+  title: "DataCheQC"
+left:
+  - text: "Home"
+href: index.html
+output:
+  html_document:
+    highlight: textmate

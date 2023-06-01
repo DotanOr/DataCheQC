@@ -2,7 +2,12 @@
 title: "DataCheQC"
 author: "Or Dotan"
 date: "May 31st, 2023"
-output: html_document
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        code_download: true
+        theme: flatly
 runtime: Shiny
 ---
 
@@ -36,7 +41,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 -   Impute missing continuous covariate values
 -   Run data cleaning functions on the dataset
 
-### Dataset Quality Checks:
+### Dataset Quality Checks
 
 -   Compare the dataset to the specification file's general table
 -   Compare dataset observations with the specification file's event table
@@ -47,7 +52,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 -   Download the final report as a *.docx* document
 -   Continue previous work by loading a pre-existing interim report
 
-### Data Visualization and Summary Tables:
+### Data Visualization and Summary Tables
 
 -   For Each Observation:
 
@@ -84,17 +89,12 @@ To app is freely available online on [shinyapps.io](https://dotanor.shinyapps.io
 
 If you wish to run a local version of the app, run the following line in your R IDE:
 
-```{r eval=FALSE, results='asis'}
+```{r first-local-option, eval=FALSE, results='asis'}
 shiny::runGitHub("DotanOr/DataCheQC")
 ```
 
 Alternatively, you can download the code as a .zip archive and extract the files, then run the app using:
 
-```{r eval=FALSE, results='asis'}
+```{r second-local-option, eval=FALSE, results='asis'}
 shiny::runApp("path/to/directory")
 ```
-
-\ 
-
-\ 
-
