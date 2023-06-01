@@ -16,15 +16,19 @@ knitr::opts_chunk$set(echo = T, eval = F)
 > Features include **visual inspection** of variables and data entries for errors and/or anomalies, and **ensuring structural integrity** through comparison with a dataset specification file.
 >
 > The open-source app, which requires no programming knowledge to operate, also allows the user to collect all findings into a **summary QC Report** which can be downloaded directly from the app.
-
+  
+  
 ## The QC Workflow
 
+  
 ------------------------------------------------------------------------
 
 ![](https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png)
-
+  
+  
 ## Features
-
+  
+  
 ------------------------------------------------------------------------
 
 ### Data Handling
@@ -71,8 +75,9 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 -   All of the above can be downloaded separately or all together as .zip archive which will be built in the background
 
+  
 ## Getting Started
-
+  
 ------------------------------------------------------------------------
 
 To app is freely available online on [shinyapps.io](https://dotanor.shinyapps.io/DataCheQC/) and its source code is hosted as a public repository on [Github](https://github.com/DotanOr/DataCheQC).
@@ -90,3 +95,5 @@ Alternatively, you can download the code as a .zip archive and extract the files
 ```{r second-local-option, eval=FALSE, results='asis'}
 shiny::runApp("path/to/directory")
 ```
+
+  

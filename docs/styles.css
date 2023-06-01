@@ -20,3 +20,56 @@ h1 {
 div.tocify {
   min-width: max-content !important;
 }
+
+/* credit to STATA https://css-tricks.com/forums/users/stata/ (with slight adjustments) */
+.metallic-sheen {
+       background-image: -webkit-repeating-linear-gradient(top,
+      hsla(0,0%,100%,0) 0%,
+      hsla(0,0%,100%,0) 3%,
+      hsla(0,0%,100%,.1) 4.5%),
+    -webkit-repeating-linear-gradient(top, 
+      hsla(0,0%,0%,0) 0%,
+      hsla(0,0%,0%,0) 2%,
+      hsla(0,0%,0%,.03) 2.5%),
+    -webkit-repeating-linear-gradient(top,
+      hsla(0,0%,100%,0) 0%,
+      hsla(0,0%,100%,0) 0.6%,
+      hsla(0,0%,100%,.15) 1.2%),
+    linear-gradient(80deg,
+      #c2c2c2 0%,
+      #d9d9d9 45%,
+      #e0e0e0 55%,
+      #e0e0e0 65%,
+      #dedede 75%,
+      #cecece 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #fff;
+    font-family: 'Lobster';
+    position: relative;
+    font-size: 2vw;
+    margin: 0;
+    font-weight: 400;
+}
+
+.metallic-sheen:after {
+    background: none;
+    content: attr(data-heading);
+    left: 0;
+	top: 0;
+    z-index: -1;
+    position: absolute;
+        text-shadow: 
+    1px  0px 0px #888888, 
+    0px  1px 0px #686868,
+    0px  -1px 0px #c6bb9f,
+    -1px  0px 0px #686868;
+      
+}
+.metallic-sheen:hover{
+  -webkit-transition: color ease-in-out 0.2s;
+    -o-transition: color ease-in-out .2s;
+    transition: background-image ease-in-out 5s;
+    background-image: linear-gradient(182deg, #edece4, #ebebe7b5 100px);
+}
+    

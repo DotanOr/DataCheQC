@@ -10,8 +10,6 @@ navbar:
     - text: ""
       icon: fa-github
       href: https://github.com/DotanOr/DataCheQC
-      target: "_blank"
-      rel: "noopener noreferrer"
   left:
     - text: "Home"
       icon: fa-home
