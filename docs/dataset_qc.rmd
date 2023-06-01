@@ -1,0 +1,17 @@
+---
+name: "DataCheQC Documentation"
+title: "Dataset Quality Checks"
+author: "Or Dotan"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = F)
+```
+  
+## Title
+  
+------------------------------------------------------------------------
+
+> **Placeholder Text**
+>
+> TBA

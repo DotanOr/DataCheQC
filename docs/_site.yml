@@ -1,9 +1,40 @@
-name: "DataCheQC"
+name: "DataCheQC Documentation"
+output_dir: "."
 navbar:
-  title: "DataCheQC"
-left:
-  - text: "Home"
-href: index.html
-output:
-  html_document:
-    highlight: textmate
+  title: "DataCheQC"                            
+  type: inverse
+  right:
+    - text: ""
+      icon: fa-envelope
+      href: "mailto:dotanor@gmail.com"
+    - text: ""
+      icon: fa-github
+      href: https://github.com/DotanOr/DataCheQC
+      target: "_blank"
+      rel: "noopener noreferrer"
+  left:
+    - text: "Home"
+      icon: fa-home
+      href: index.html
+    - text: "Articles"
+      icon: fa-print
+      menu:
+      - text: "1. Dataset and Specification Format"
+        href: input_format.html
+      - text: "2. Data Handling"
+        href: data_handling.html
+      - text: "3. Dataset Quality Checks"
+        href: dataset_qc.html
+      - text: "4. Data Visualization and Summary Tables"
+        href: eda_st.html
+output: 
+    html_document:
+        css: styles.css
+        toc: true
+        toc_float: true
+        toc_depth: 6
+        theme: spacelab
+        highlight: kate
+        includes:
+          in_header: header.html
+runtime: Shiny

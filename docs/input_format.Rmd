@@ -1,0 +1,15 @@
+---
+name: "DataCheQC Documentation"
+title: "Dataset and Specification Format"
+author: "Or Dotan"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = F)
+```
+
+------------------------------------------------------------------------
+  
+> **Placeholder Text**
+>
+> TBA

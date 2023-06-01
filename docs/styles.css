@@ -1,0 +1,22 @@
+.navbar-brand {
+  font-family: lobster;
+}
+
+h1 {
+  font-family: lobster;
+}
+
+.author {
+  font-size: 14px;
+  color: grey;
+  padding-left: 15px;
+  font-style: italic;
+}
+
+.tocify-extend-page{
+  height: 20vh !important;
+}
+
+div.tocify {
+  min-width: max-content !important;
+}
