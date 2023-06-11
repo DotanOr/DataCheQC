@@ -44,7 +44,7 @@ knitr::kable(table1,
 )
 
 htmltools::br()
-htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Dataset.csv", target="_top !important", "Click here to download an example dataset in this format")
+htmltools::tags$a(class = "example-link", href="www/Example_Dataset.csv", target="_blank !important", "Click here to download an example dataset in this format", download = NA)
 ```
 
 <br>  
@@ -105,7 +105,7 @@ knitr::kable(table3,
              caption = 'Structure of the Specification File Event Table',
 )
 htmltools::br()
-htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Specification_File.docx", target="_blank", "Click here to download an example of a full specification file containing both tables")
+htmltools::tags$a(class = "example-link", href="www/Example_Specification_File.docx", target="_blank", "Click here to download an example of a full specification file containing both tables", download = NA)
 ```
 
 
