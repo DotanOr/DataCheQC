@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 To fully leverage app functionalities and process many different types of data from different sources, a standardized dataset structure needs to be assumed. [Schmidt et al. (2014)](https://link.springer.com/article/10.1007/s10928-014-9370-4) proposed the **“Generalized Dataset”** as a solution for a pharmacometrics dataset format which is compound- and indication-independent, not specific to a particular type of pharmacometrics analysis, and not tied to a specific nonlinear mixed-effect (NLME) software.
   
-The format can handle various types of data, such as demographics, pharmacokinetics (PK), and pharmacodynamics (PD), and requires minimal manipulation of [Clinical Data Interchange Standards Consortium (CDISC)](http://www.cdisc.org) data to compile a resulting dataset. The generalized dataset can be seamlessly converted to an NLME dataset suitable for analysis in [NONMEM](https://nonmem.iconplc.com/#/nonmem743/guides) and [Monolix](http://lixoft.com/products/monolix) using available tools.
+The format can handle various types of data, such as demographics, pharmacokinetics (PK), and pharmacodynamics (PD), and requires minimal manipulation of [Clinical Data Interchange Standards Consortium (CDISC)](http://www.cdisc.org) data to compile a resulting dataset. The generalized dataset can be seamlessly converted to an NLME dataset suitable for analysis in [NONMEM](https://www.iconplc.com/solutions/technologies/nonmem/index.xml) and [Monolix](https://www.simulations-plus.com/software/monolix/monolix/) using available tools.
   
 The high rate of success and efficiency that were achieved while working with the generalized dataset across different drug development programs and organizations influenced the choice of this particular format. Requirements for the datasets to be used with QC app are detailed in the table below:
   
@@ -44,7 +44,7 @@ knitr::kable(table1,
 )
 
 htmltools::br()
-htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Dataset.csv", target="_blank", "Click here to download an example dataset in this format")
+htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Dataset.csv", target="_top !important", "Click here to download an example dataset in this format")
 ```
 
 <br>  
@@ -105,7 +105,7 @@ knitr::kable(table3,
              caption = 'Structure of the Specification File Event Table',
 )
 htmltools::br()
-htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Specification_File.docx", target="_blank", "Click here to download an example of a full specification file containing both tables.")
+htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Specification_File.docx", target="_blank", "Click here to download an example of a full specification file containing both tables")
 ```
 
 
