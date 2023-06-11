@@ -18,6 +18,8 @@ knitr::opts_chunk$set(echo = T, eval = F)
 > The open-source app, which requires no programming knowledge to operate, also allows the user to collect all findings into a **summary QC Report** which can be downloaded directly from the app.
   
   
+<br>  
+
 ## The QC Workflow
 
   
@@ -26,6 +28,8 @@ knitr::opts_chunk$set(echo = T, eval = F)
 ![](https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png)
   
   
+<br> 
+
 ## Features
   
   
@@ -37,6 +41,8 @@ knitr::opts_chunk$set(echo = T, eval = F)
 -   Impute missing continuous covariate values
 -   Run data cleaning functions on the dataset
 
+<br>
+  
 ### Dataset Quality Checks
 
 -   Compare the dataset to the specification file's general table
@@ -48,6 +54,8 @@ knitr::opts_chunk$set(echo = T, eval = F)
 -   Download the final report as a *.docx* document
 -   Continue previous work by loading a pre-existing interim report
 
+<br>
+  
 ### Data Visualization and Summary Tables
 
 -   For Each Observation:
@@ -76,11 +84,15 @@ knitr::opts_chunk$set(echo = T, eval = F)
 -   All of the above can be downloaded separately or all together as .zip archive which will be built in the background
 
   
+<br> 
+
 ## Getting Started
   
 ------------------------------------------------------------------------
 
 To app is freely available online on [shinyapps.io](https://dotanor.shinyapps.io/DataCheQC/) and its source code is hosted as a public repository on [Github](https://github.com/DotanOr/DataCheQC).
+
+<br>
 
 #### Local Installation
 

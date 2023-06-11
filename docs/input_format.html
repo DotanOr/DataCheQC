@@ -41,8 +41,8 @@
 <title>DataCheQC Documentation</title>
 <script>
 $(document).ready(function () {
-  $("a:has(span.fa-github)").attr('target','_blank').attr('rel', 'noopener noreferrer');
-  $(".navbar-brand").attr('target','_blank').addClass('metallic-sheen');
+   $("a:has(span.fa-github), p>a").attr('target','_blank').attr('rel', 'noopener noreferrer');
+   $(".navbar-brand").attr('target','_blank').addClass('metallic-sheen')
 });
 </script>
 
@@ -380,10 +380,176 @@ div.tocify {
 
 
 <hr />
-<blockquote>
-<p><strong>Placeholder Text</strong></p>
-<p>TBA</p>
-</blockquote>
+<div id="the-generalized-dataset-format" class="section level2">
+<h2>The Generalized Dataset Format</h2>
+<hr />
+<p>To fully leverage app functionalities and process many different types of data from different sources, a standardized dataset structure needs to be assumed. <a href="https://link.springer.com/article/10.1007/s10928-014-9370-4">Schmidt et al. (2014)</a> proposed the <strong>“Generalized Dataset”</strong> as a solution for a pharmacometrics dataset format which is compound- and indication-independent, not specific to a particular type of pharmacometrics analysis, and not tied to a specific nonlinear mixed-effect (NLME) software.</p>
+<p>The format can handle various types of data, such as demographics, pharmacokinetics (PK), and pharmacodynamics (PD), and requires minimal manipulation of <a href="http://www.cdisc.org">Clinical Data Interchange Standards Consortium (CDISC)</a> data to compile a resulting dataset. The generalized dataset can be seamlessly converted to an NLME dataset suitable for analysis in <a href="https://nonmem.iconplc.com/#/nonmem743/guides">NONMEM</a> and <a href="http://lixoft.com/products/monolix">Monolix</a> using available tools.</p>
+<p>The high rate of success and efficiency that were achieved while working with the generalized dataset across different drug development programs and organizations influenced the choice of this particular format. Requirements for the datasets to be used with QC app are detailed in the table below:</p>
+<table>
+<caption>Structure of the Generalized Dataset Format</caption>
+<colgroup>
+<col width="6%" />
+<col width="88%" />
+<col width="5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Description</th>
+<th align="left">Type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">USUBJID</td>
+<td align="left">Unique subject identifier</td>
+<td align="left">String</td>
+</tr>
+<tr class="even">
+<td align="left">COMPOUND</td>
+<td align="left">Name of the investigational compound</td>
+<td align="left">String</td>
+</tr>
+<tr class="odd">
+<td align="left">TRTNAME</td>
+<td align="left">Name of actual treatment given to subject</td>
+<td align="left">String</td>
+</tr>
+<tr class="even">
+<td align="left">TIMEUNIT</td>
+<td align="left">Unit of all numeric time in the dataset</td>
+<td align="left">String</td>
+</tr>
+<tr class="odd">
+<td align="left">NT</td>
+<td align="left">Nominal time of event relative to the first dose administration</td>
+<td align="left">Numeric</td>
+</tr>
+<tr class="even">
+<td align="left">TIME</td>
+<td align="left">Actual time of event relative to the first dose administration</td>
+<td align="left">Numeric</td>
+</tr>
+<tr class="odd">
+<td align="left">TYPENAME</td>
+<td align="left">Unique type of event (e.g., dose, PK, PD, continuous covariate, categorical covariate, adverse event, concomitant medication)</td>
+<td align="left">String</td>
+</tr>
+<tr class="even">
+<td align="left">NAME</td>
+<td align="left">Unique short name of event</td>
+<td align="left">String</td>
+</tr>
+<tr class="odd">
+<td align="left">VALUE</td>
+<td align="left">Value of event defined by NAME</td>
+<td align="left">Numeric</td>
+</tr>
+<tr class="even">
+<td align="left">VALUETXT</td>
+<td align="left">Text version of value (if applicable)</td>
+<td align="left">String</td>
+</tr>
+<tr class="odd">
+<td align="left">UNIT</td>
+<td align="left">Unit of the value reported in the VALUE column</td>
+<td align="left">String</td>
+</tr>
+<tr class="even">
+<td align="left">ROUTE</td>
+<td align="left">Route of administration</td>
+<td align="left">String</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<a class="example-link" href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Dataset.csv" target="_blank">Click here to download an example dataset in this format</a>
+<p><br><br />
+<br></p>
+</div>
+<div id="the-specification-file-format" class="section level2">
+<h2>The Specification File Format</h2>
+<hr />
+<p>The <strong>Specification File</strong> should be compiled in a Word or Excel document. The file must contain <em>two distinct tables</em>, either in separate Word pages or Excel sheets: the <strong>General Table</strong> and the <strong>Event Table</strong>.</p>
+<p><br></p>
+<div id="the-general-table" class="section level3">
+<h3>The General Table</h3>
+<p>The <strong>General Table</strong> comprises a listing of the expected non-study specific variables (i.e., those listed in the table above), along with their description, data type (e.g., numeric, string, date, time), derivation, label and more. It can also contain optional elements specifying whether the described variable is required or not for inclusion in the dataset and/or whether it needs input from the pharmacometrician following each data update.</p>
+<table>
+<caption>Structure of the Specification File General Table</caption>
+<colgroup>
+<col width="10%" />
+<col width="16%" />
+<col width="10%" />
+<col width="30%" />
+<col width="13%" />
+<col width="18%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Label</th>
+<th align="left">Type</th>
+<th align="left">Comments</th>
+<th align="left">Required (Optional)</th>
+<th align="left">Pharmacometrician Input (Optional)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">The name of the variable (e.g., USUBJID, STUDY, TIME)</td>
+<td align="left">Description of the variable (e.g., Subject ID, Study name, Actual time of assessment)</td>
+<td align="left">The type of variable (e.g., numeric, string, date-time)</td>
+<td align="left">Comments regarding the variable and its derivation (e.g., the unique subject ID should be composed of the study name plus a serial number, separated by dashes)</td>
+<td align="left">Whether this variable’s inclusion in the dataset is required or optional</td>
+<td align="left">Whether a pharmacometrician’s input and review is required for the variable after each data update</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+</div>
+<div id="the-event-table" class="section level3">
+<h3>The Event Table</h3>
+<p>“Event” refers to a row in the two-dimensional dataset, distinguished by its NAME and VALUE/VALUETEXT, which can reflect the dosing, PK concentrations, PD observations, efficacy or safety readouts, baseline or time-dependent covariates, adverse events, co-medications, or any other relevant observation. The <strong>Event Table</strong> consequently describes the various events in the dataset, accompanied by their description, values, units, and, when applicable, limits of quantification.</p>
+<table style="width:100%;">
+<caption>Structure of the Specification File Event Table</caption>
+<colgroup>
+<col width="4%" />
+<col width="30%" />
+<col width="13%" />
+<col width="11%" />
+<col width="14%" />
+<col width="13%" />
+<col width="13%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">NAME</th>
+<th align="left">VALUE</th>
+<th align="left">VALUETXT</th>
+<th align="left">UNIT</th>
+<th align="left">TYPENAME</th>
+<th align="left">LLOQ</th>
+<th align="left">ULOQ</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Name of the event</td>
+<td align="left">Indicates whether the observed event is numeric (i.e., ‘[Num]’), or otherwise defines the numeric mapping of the event’s text values</td>
+<td align="left">If the VALUE is not numeric, the categories for the event</td>
+<td align="left">Unit of measurement of the event (if applicable)</td>
+<td align="left">Type of the event (Dose, PK, PD, covariate, adverse event, etc.)</td>
+<td align="left">Lower level of quantification of the event (if applicable)</td>
+<td align="left">Upper level of quantification of the event (if applicable)</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<a class="example-link" href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Specification_File.docx" target="_blank">Click here to download an example of a full specification file containing both tables.</a>
+</div>
+</div>
 
 
 

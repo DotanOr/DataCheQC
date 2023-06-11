@@ -10,6 +10,102 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 ------------------------------------------------------------------------
   
-> **Placeholder Text**
->
-> TBA
+## The Generalized Dataset Format
+
+------------------------------------------------------------------------
+
+To fully leverage app functionalities and process many different types of data from different sources, a standardized dataset structure needs to be assumed. [Schmidt et al. (2014)](https://link.springer.com/article/10.1007/s10928-014-9370-4) proposed the **“Generalized Dataset”** as a solution for a pharmacometrics dataset format which is compound- and indication-independent, not specific to a particular type of pharmacometrics analysis, and not tied to a specific nonlinear mixed-effect (NLME) software.
+  
+The format can handle various types of data, such as demographics, pharmacokinetics (PK), and pharmacodynamics (PD), and requires minimal manipulation of [Clinical Data Interchange Standards Consortium (CDISC)](http://www.cdisc.org) data to compile a resulting dataset. The generalized dataset can be seamlessly converted to an NLME dataset suitable for analysis in [NONMEM](https://nonmem.iconplc.com/#/nonmem743/guides) and [Monolix](http://lixoft.com/products/monolix) using available tools.
+  
+The high rate of success and efficiency that were achieved while working with the generalized dataset across different drug development programs and organizations influenced the choice of this particular format. Requirements for the datasets to be used with QC app are detailed in the table below:
+  
+  
+```{r tab1, echo=F,eval=T}
+table1 <- tibble::tribble(
+  ~Name,      ~Description,                                                       ~Type,
+  "USUBJID",	"Unique subject identifier",	                                      "String",
+  "COMPOUND",	"Name of the investigational compound",	                            "String",
+  "TRTNAME",	"Name of actual treatment given to subject",	                      "String",
+  "TIMEUNIT",	"Unit of all numeric time in the dataset",	                        "String",
+  "NT",       "Nominal time of event relative to the first dose administration",	"Numeric",
+  "TIME",	    "Actual time of event relative to the first dose administration",	  "Numeric",
+  "TYPENAME",	"Unique type of event (e.g., dose, PK, PD, continuous covariate, categorical covariate, adverse event, concomitant medication)",	                               "String",
+  "NAME",	    "Unique short name of event",	                                       "String",
+  "VALUE",	  "Value of event defined by NAME",	                                   "Numeric",
+  "VALUETXT",	"Text version of value (if applicable)",                             "String",
+  "UNIT",	    "Unit of the value reported in the VALUE column",	                   "String",
+  "ROUTE",	  "Route of administration",	                                         "String"
+)
+
+
+knitr::kable(table1,
+             caption = 'Structure of the Generalized Dataset Format',
+)
+
+htmltools::br()
+htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Dataset.csv", target="_blank", "Click here to download an example dataset in this format")
+```
+
+<br>  
+<br>  
+
+## The Specification File Format
+
+------------------------------------------------------------------------
+  
+The **Specification File** should be compiled in a Word or Excel document. The file must contain *two distinct tables*, either in separate Word pages or Excel sheets: the **General Table** and the **Event Table**.
+
+<br>
+
+### The General Table
+  
+The **General Table** comprises a listing of the expected non-study specific variables (i.e., those listed in the table above), along with their description, data type (e.g., numeric, string, date, time), derivation, label and more. It can also contain optional elements specifying whether the described variable is required or not for inclusion in the dataset and/or whether it needs input from the pharmacometrician following each data update.
+ 
+
+```{r tab2, echo=F,eval=T}
+table2 <- tibble::tribble(
+ ~Name,	~Label,	~Type,	~Comments,	~`Required (Optional)`,	~`Pharmacometrician Input (Optional)`,
+"The name of the variable (e.g., USUBJID, STUDY, TIME)",	
+"Description of the variable (e.g., Subject ID, Study name, Actual time of assessment)",	
+"The type of variable (e.g., numeric, string, date-time)",
+"Comments regarding the variable and its derivation (e.g., the unique subject ID should be composed of the study name plus a serial number, separated by dashes)",
+"Whether this variable's inclusion in the dataset is required or optional",
+"Whether a pharmacometrician's input and review is required for the variable after each data update"
+)
+
+
+knitr::kable(table2,
+             caption = 'Structure of the Specification File General Table',
+)
+
+```
+<br>
+ 
+ 
+### The Event Table
+  
+“Event” refers to a row in the two-dimensional dataset, distinguished by its NAME and VALUE/VALUETEXT, which can reflect the dosing, PK concentrations, PD observations, efficacy or safety readouts, baseline or time-dependent covariates, adverse events, co-medications, or any other relevant observation. The **Event Table** consequently describes the various events in the dataset, accompanied by their description, values, units, and, when applicable, limits of quantification.
+
+```{r tab3, echo=F,eval=T}
+table3 <- tibble::tribble(
+~NAME,	~VALUE,	~VALUETXT,	~UNIT,	~TYPENAME,	~LLOQ,	~ULOQ,
+"Name of the event",	
+"Indicates whether the observed event is numeric (i.e., '[Num]'), or  otherwise defines the numeric mapping of the event's text values",
+"If the VALUE is not numeric, the categories for the event",
+"Unit of measurement of the event (if applicable)",
+"Type of the event (Dose, PK, PD, covariate, adverse event, etc.)",
+"Lower level of quantification of the event (if applicable)",
+"Upper level of quantification of the event (if applicable)"
+
+)
+
+
+knitr::kable(table3,
+             caption = 'Structure of the Specification File Event Table',
+)
+htmltools::br()
+htmltools::tags$a(class = "example-link", href="https://raw.githubusercontent.com/DotanOr/DataCheQC/main/Examples/Example_Specification_File.docx", target="_blank", "Click here to download an example of a full specification file containing both tables.")
+```
+
+

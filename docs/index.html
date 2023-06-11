@@ -40,8 +40,8 @@
 <title>DataCheQC Documentation</title>
 <script>
 $(document).ready(function () {
-  $("a:has(span.fa-github)").attr('target','_blank').attr('rel', 'noopener noreferrer');
-  $(".navbar-brand").attr('target','_blank').addClass('metallic-sheen');
+   $("a:has(span.fa-github), p>a").attr('target','_blank').attr('rel', 'noopener noreferrer');
+   $(".navbar-brand").attr('target','_blank').addClass('metallic-sheen')
 });
 </script>
 
@@ -483,11 +483,13 @@ div.tocify {
 <p>Features include <strong>visual inspection</strong> of variables and data entries for errors and/or anomalies, and <strong>ensuring structural integrity</strong> through comparison with a dataset specification file.</p>
 <p>The open-source app, which requires no programming knowledge to operate, also allows the user to collect all findings into a <strong>summary QC Report</strong> which can be downloaded directly from the app.</p>
 </blockquote>
+<p><br></p>
 </div>
 <div id="the-qc-workflow" class="section level2">
 <h2>The QC Workflow</h2>
 <hr />
 <p><img src="https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png" /></p>
+<p><br></p>
 </div>
 <div id="features" class="section level2">
 <h2>Features</h2>
@@ -500,6 +502,7 @@ div.tocify {
 <li>Impute missing continuous covariate values</li>
 <li>Run data cleaning functions on the dataset</li>
 </ul>
+<p><br></p>
 </div>
 <div id="dataset-quality-checks" class="section level3">
 <h3>Dataset Quality Checks</h3>
@@ -513,6 +516,7 @@ div.tocify {
 <li>Download the final report as a <em>.docx</em> document</li>
 <li>Continue previous work by loading a pre-existing interim report</li>
 </ul>
+<p><br></p>
 </div>
 <div id="data-visualization-and-summary-tables" class="section level3">
 <h3>Data Visualization and Summary Tables</h3>
@@ -542,12 +546,14 @@ div.tocify {
 </ul></li>
 <li><p>All of the above can be downloaded separately or all together as .zip archive which will be built in the background</p></li>
 </ul>
+<p><br></p>
 </div>
 </div>
 <div id="getting-started" class="section level2">
 <h2>Getting Started</h2>
 <hr />
 <p>To app is freely available online on <a href="https://dotanor.shinyapps.io/DataCheQC/">shinyapps.io</a> and its source code is hosted as a public repository on <a href="https://github.com/DotanOr/DataCheQC">Github</a>.</p>
+<p><br></p>
 <div id="local-installation" class="section level4">
 <h4>Local Installation</h4>
 <p>If you wish to run a local version of the app, run the following line in your R IDE:</p>
