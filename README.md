@@ -11,7 +11,7 @@ You can load the app locally by using `shiny::runGitHub("DotanOr/DataCheQC")`.
 
 Alternatively, download the code as a .zip archive and extract the files, then run using `shiny::runApp("path/to/directory")`
 
-<ins>**Note</ins>:**
+<ins>**Note</ins>:**  
 As the app has several dependencies, running the code locally may not work right away depending on your R environment.
 
 If you have issues with conflicting package versions, run the following to try and resolve those discrepancies:
