@@ -18,7 +18,7 @@ To fully leverage app functionalities and process many different types of data f
   
 The format can handle various types of data, such as demographics, pharmacokinetics (PK), and pharmacodynamics (PD), and requires minimal manipulation of [Clinical Data Interchange Standards Consortium (CDISC)](http://www.cdisc.org) data to compile a resulting dataset. The generalized dataset can be seamlessly converted to an NLME dataset suitable for analysis in [NONMEM](https://www.iconplc.com/solutions/technologies/nonmem/index.xml) and [Monolix](https://www.simulations-plus.com/software/monolix/monolix/) using available tools.
   
-The high rate of success and efficiency that were achieved while working with the generalized dataset across different drug development programs and organizations influenced the choice of this particular format. Requirements for the datasets to be used with QC app are detailed in the table below:
+The high rate of success and efficiency that were achieved while working with the generalized dataset across different drug development programs and organizations influenced the choice of this particular format. Requirements for the datasets to be used with the DataCheQC app are detailed in the table below:
   
   
 ```{r tab1, echo=F,eval=T}
