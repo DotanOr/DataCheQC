@@ -119,7 +119,7 @@ shiny::runApp("path/to/directory")
 
 <strong style= "text-decoration: underline">Note:</strong>  
 As the app has several dependencies, running the code locally may not work right away depending on your R environment.  
-
+  
 If you have issues with conflicting package versions, run the following to try and resolve those discrepancies:
 ```r
 source("https://github.com/DotanOr/DataCheQC/blob/main/www/load_libs.R?raw=TRUE")

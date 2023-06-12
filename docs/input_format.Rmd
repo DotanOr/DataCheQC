@@ -99,7 +99,7 @@ table3 <- tibble::tribble(
 "Upper level of quantification of the event (if applicable)"
 
 )
-
+  
 
 knitr::kable(table3,
              caption = 'Structure of the Specification File Event Table',
