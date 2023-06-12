@@ -64,10 +64,14 @@ knitr::opts_chunk$set(echo = T, eval = F)
     -   Median Range Plots
     -   Individual Plots
 
+
+
 -   For Continuous/Categorical Covariates:
 
     -   Covariate Distribution
     -   Covariate Correlations
+
+
 
 -   For Timings:
 
@@ -75,16 +79,21 @@ knitr::opts_chunk$set(echo = T, eval = F)
     -   Dosing Schedule plots
     -   Sampling Schedule Plots
 
+
+
 -   Summary Tables:
 
     -   Summary of Continuous & Categorical Covariates
     -   Summary of Duplicated Time-Value Pairs
     -   Summary of Observations
 
+
+
 -   All of the above can be downloaded separately or all together as .zip archive which will be built in the background
 
   
 <br> 
+
 
 ## Getting Started
   
@@ -108,4 +117,10 @@ Alternatively, you can download the code as a .zip archive and extract the files
 shiny::runApp("path/to/directory")
 ```
 
-  
+<strong style= "text-decoration: underline">Note:</strong>  
+As the app has several dependencies, running the code locally may not work right away depending on your R environment.  
+
+If you have issues with conflicting package versions, run the following to try and resolve those discrepancies:
+```r
+source("https://github.com/DotanOr/DataCheQC/blob/main/www/load_libs.R?raw=TRUE")
+```

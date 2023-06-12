@@ -1,6 +1,6 @@
 ---
 name: "DataCheQC Documentation"
-title: "Data Visualization and Summary Tables"
+title: "Exploratory Data Analaysis & Summary Tables"
 author: "Or Dotan"
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 ## Title
   
 ------------------------------------------------------------------------
-  
+
 > **Placeholder Text**
 >
 > TBA

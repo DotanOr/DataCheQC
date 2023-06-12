@@ -560,6 +560,10 @@ div.tocify {
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runGitHub</span>(<span class="st">&quot;DotanOr/DataCheQC&quot;</span>)</span></code></pre></div>
 <p>Alternatively, you can download the code as a .zip archive and extract the files, then run the app using:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runApp</span>(<span class="st">&quot;path/to/directory&quot;</span>)</span></code></pre></div>
+<p><strong style= "text-decoration: underline">Note:</strong><br />
+As the app has several dependencies, running the code locally may not work right away depending on your R environment.</p>
+<p>If you have issues with conflicting package versions, run the following to try and resolve those discrepancies:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;https://github.com/DotanOr/DataCheQC/blob/main/www/load_libs.R?raw=TRUE&quot;</span>)</span></code></pre></div>
 </div>
 </div>
 
