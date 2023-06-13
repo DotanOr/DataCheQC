@@ -44,14 +44,17 @@ div.tocify {
 
 /* Adding glassmorphism to the background of text, with some tweaks
 from https://hype4.academy/tools/glassmorphism-generator */
-.toc-content {
-  background: rgba( 255, 255, 255, 0.6 );
+.toc-content, .tocify {
+  background-color: rgba( 255, 255, 255, 0.6 ) !important;
   box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
   -webkit-backdrop-filter: blur( 6px );
   border-radius: 10px;
   border: 1px solid rgba( 255, 255, 255, 0.18 );
 }
 
+.list-group-item {
+  background-color: transparent;
+}
 
 .metallic-sheen {
     -webkit-background-clip: text;
