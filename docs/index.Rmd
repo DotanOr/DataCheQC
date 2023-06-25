@@ -8,41 +8,37 @@ knitr::opts_chunk$set(echo = T, eval = F)
 ```
 
 ------------------------------------------------------------------------
-  
+
 ## Overview
-  
+
 > **DataCheQC** is an interactive application based on the **R Shiny** framework developed for the purposes of performing quality control (QC) checks on pharmacometrics datasets, and thereby supporting the implementation of model-informed drug development.
 >
 > Features include **visual inspection** of variables and data entries for errors and/or anomalies, and **ensuring structural integrity** through comparison with a dataset specification file.
 >
 > The open-source app, which requires no programming knowledge to operate, also allows the user to collect all findings into a **summary QC Report** which can be downloaded directly from the app.
-  
-  
-<br>  
+
+<br>
 
 ## The QC Workflow
 
-  
 ------------------------------------------------------------------------
 
-![](https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png)
-  
-  
-<br> 
+![](https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png){#qc_workflow}
+
+<br>
 
 ## Features
-  
-  
+
 ------------------------------------------------------------------------
 
 ### Data Handling
 
--   Automatic detection of doses, observations, and covariates  
+-   Automatic detection of doses, observations, and covariates
 -   Impute missing continuous covariate values
 -   Run data cleaning functions on the dataset
 
 <br>
-  
+
 ### Dataset Quality Checks
 
 -   Compare the dataset to the specification file's general table
@@ -55,7 +51,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 -   Continue previous work by loading a pre-existing interim report
 
 <br>
-  
+
 ### Data Visualization and Summary Tables
 
 -   For Each Observation:
@@ -64,14 +60,10 @@ knitr::opts_chunk$set(echo = T, eval = F)
     -   Median Range Plots
     -   Individual Plots
 
-
-
 -   For Continuous/Categorical Covariates:
 
     -   Covariate Distribution
     -   Covariate Correlations
-
-
 
 -   For Timings:
 
@@ -79,24 +71,18 @@ knitr::opts_chunk$set(echo = T, eval = F)
     -   Dosing Schedule plots
     -   Sampling Schedule Plots
 
-
-
 -   Summary Tables:
 
     -   Summary of Continuous & Categorical Covariates
     -   Summary of Duplicated Time-Value Pairs
     -   Summary of Observations
 
-
-
 -   All of the above can be downloaded separately or all together as .zip archive which will be built in the background
 
-  
-<br> 
-
+<br>
 
 ## Getting Started
-  
+
 ------------------------------------------------------------------------
 
 To app is freely available online on [shinyapps.io](https://dotanor.shinyapps.io/DataCheQC/) and its source code is hosted as a public repository on [Github](https://github.com/DotanOr/DataCheQC).
@@ -117,10 +103,11 @@ Alternatively, you can download the code as a .zip archive and extract the files
 shiny::runApp("path/to/directory")
 ```
 
-<strong style= "text-decoration: underline">Note:</strong>  
-As the app has several dependencies, running the code locally may not work right away depending on your R environment.  
-  
+<strong style= "text-decoration: underline">Note:</strong>\
+As the app has several dependencies, running the code locally may not work right away depending on your R environment.
+
 If you have issues with conflicting package versions, run the following to try and resolve those discrepancies:
-```r
+
+``` {.r}
 source("https://github.com/DotanOr/DataCheQC/blob/main/www/load_libs.R?raw=TRUE")
 ```

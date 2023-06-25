@@ -37,13 +37,14 @@
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
 <link rel="shortcut icon" href="favicon.ico">
+<!-- Various functions for handling image interaction -->
+<script src = "preload_triggers.js"></script>
 <title>DataCheQC Documentation</title>
-<script>
-$(document).ready(function () {
-   $("a:has(span.fa-github), p>a").attr('target','_blank').attr('rel', 'noopener noreferrer');
-   $(".navbar-brand").attr('target','_top').addClass('metallic-sheen')
-});
-</script>
+<div id="imgModal" class="modal">
+  <img class="modal-content">
+  <div id="imgCaption"></div>
+</div>
+<div id="imgTooltip">Click to enlarge</div>
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -488,7 +489,7 @@ div.tocify {
 <div id="the-qc-workflow" class="section level2">
 <h2>The QC Workflow</h2>
 <hr />
-<p><img src="https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png" /></p>
+<p><img src="https://user-images.githubusercontent.com/111221177/227787492-d4a40cfe-94fd-4aa3-99eb-7e64d49cac84.png" id="qc_workflow" /></p>
 <p><br></p>
 </div>
 <div id="features" class="section level2">
@@ -497,8 +498,7 @@ div.tocify {
 <div id="data-handling" class="section level3">
 <h3>Data Handling</h3>
 <ul>
-<li>Automatic detection of doses, observations, and covariates<br />
-</li>
+<li>Automatic detection of doses, observations, and covariates</li>
 <li>Impute missing continuous covariate values</li>
 <li>Run data cleaning functions on the dataset</li>
 </ul>

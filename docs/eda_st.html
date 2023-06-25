@@ -38,13 +38,14 @@
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
 <link rel="shortcut icon" href="favicon.ico">
+<!-- Various functions for handling image interaction -->
+<script src = "preload_triggers.js"></script>
 <title>DataCheQC Documentation</title>
-<script>
-$(document).ready(function () {
-   $("a:has(span.fa-github), p>a").attr('target','_blank').attr('rel', 'noopener noreferrer');
-   $(".navbar-brand").attr('target','_top').addClass('metallic-sheen')
-});
-</script>
+<div id="imgModal" class="modal">
+  <img class="modal-content">
+  <div id="imgCaption"></div>
+</div>
+<div id="imgTooltip">Click to enlarge</div>
 
 <style type="text/css">
   code{white-space: pre-wrap;}

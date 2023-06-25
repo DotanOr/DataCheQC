@@ -38,13 +38,14 @@
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
 <link rel="shortcut icon" href="favicon.ico">
+<!-- Various functions for handling image interaction -->
+<script src = "preload_triggers.js"></script>
 <title>DataCheQC Documentation</title>
-<script>
-$(document).ready(function () {
-   $("a:has(span.fa-github), p>a").attr('target','_blank').attr('rel', 'noopener noreferrer');
-   $(".navbar-brand").attr('target','_top').addClass('metallic-sheen')
-});
-</script>
+<div id="imgModal" class="modal">
+  <img class="modal-content">
+  <div id="imgCaption"></div>
+</div>
+<div id="imgTooltip">Click to enlarge</div>
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -379,13 +380,74 @@ div.tocify {
 </div>
 
 
-<div id="title" class="section level2">
-<h2>Title</h2>
+<div id="loading-the-dataset" class="section level2">
+<h2>Loading the Dataset</h2>
 <hr />
-<blockquote>
-<p><strong>Placeholder Text</strong></p>
-<p>TBA</p>
-</blockquote>
+<p>After making sure that <a href="./input_format.html">the dataset is in the correct format</a>, open the app either <a href="./index.html#Getting_Started">locally</a> or <a href="http://dotanor.shinyapps.io/DataCheQC">online</a>. At the app landing page, you can upload a dataset (either as a .csv or .sas7bdat file) via the <strong>Browse…</strong> button or by dragging and dropping the file in the space next to it.</p>
+<div class="figure">
+<img src="www/landing_page.png" alt="" />
+<p class="caption">The DataCheQC App Landing Page</p>
+</div>
+<p><br></p>
+</div>
+<div id="automatic-variable-detection" class="section level2">
+<h2>Automatic Variable Detection</h2>
+<hr />
+<p>After the file has been uploaded, the app will attempt to identify its components:</p>
+<ul>
+<li><p>Dosing</p>
+<ul>
+<li>Derived from rows where TYPENAME = “DOSE”</li>
+</ul></li>
+<li><p>Observations</p>
+<ul>
+<li>Derived from TYPENAME = “PK” or “PD”</li>
+</ul></li>
+<li><p>Continuous covariates</p>
+<ul>
+<li>Derived from typical covariate names such as Weight and Age, or determined by TYPENAME</li>
+</ul></li>
+<li><p>Categorical covariates</p>
+<ul>
+<li>Derived from typical covariates such as Ethnicity and Gender, or determined by TYPENAME</li>
+</ul></li>
+<li><p>Time-dependent continuous/categorical covariates</p>
+<ul>
+<li>Derived from the typical covariates that match the above but change over time for the same subject</li>
+</ul></li>
+</ul>
+<p>If there are still variables in the data that weren’t included automatically, you can select and add them manually by clicking on the appropriate selection input.</p>
+<p><br></p>
+<div class="figure">
+<img src="www/after_data_upload.png" alt="" />
+<p class="caption">Automatic Detection of Variables</p>
+</div>
+<p><br></p>
+</div>
+<div id="additional-options" class="section level2">
+<h2>Additional Options</h2>
+<p>Users can also perform some optional actions, such as imputing continuous covariates by their median, adding a “DRAFT” watermark to some plots, and cleaning the dataset. These options can be set both before and after a file has been uploaded.</p>
+<p>Cleaning functions include:</p>
+<ul>
+<li><p>Remove missing observation records with missing TIME</p></li>
+<li><p>Set missing observation records with missing DV to IGNORE</p></li>
+<li><p>Remove non-dose and non-observation records</p></li>
+<li><p>Remove subjects without observations</p></li>
+<li><p>Remove dose records with AMT = 0</p></li>
+<li><p>Remove ignored records (MDV=1)</p></li>
+</ul>
+</div>
+<div id="next-steps" class="section level2">
+<h2>Next Steps</h2>
+<hr />
+<p>In order to be able to produce the various <a href="./eda_st.html">visual analyses</a> offered by DataCheQC, the app needs to perform certain calculations on the data. This can take from a few seconds to several minutes, depending on file size. The notification at the bottom-right of the screen shows the progress of the operation, as shown in the image above.</p>
+<p>Fortunately, the app conducts this procedure in a background process, which allows the user to start on the next step in the QC workflow - <a href="./dataset_qc.html">comparing the dataset to the specification file</a> - as soon the file itself has been uploaded to the app.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Indicated by the progress bar below the file upload input reading “Upload Complete”.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
 
 
