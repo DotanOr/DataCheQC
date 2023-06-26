@@ -86,7 +86,9 @@ $(document).ready(function () {
               }
      });
      
-     let original_location = $(".footref").first().position().top;
+     if ($(".footref").first().length) {
+	let original_location = $(".footref").first().position().top;
+     }
      
      $(".footref").click(function() {
        var $clicked = $(this),
