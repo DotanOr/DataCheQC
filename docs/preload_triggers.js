@@ -98,7 +98,7 @@ $(document).ready(function () {
        $('html').scrollTop(send_to)
      })
      
-     document.getElementById("footback").addEventListener('click', function(){
+     $("#footback").on('click', function(){
         $('html').scrollTop(original_location - $(window).height()/2);
      })
 });
