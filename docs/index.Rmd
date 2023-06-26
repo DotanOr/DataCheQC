@@ -52,7 +52,11 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 <br>
 
+<div>
+
 ### Data Visualization and Summary Tables
+
+</div>
 
 -   For Each Observation:
 
@@ -78,6 +82,8 @@ knitr::opts_chunk$set(echo = T, eval = F)
     -   Summary of Observations
 
 -   All of the above can be downloaded separately or all together as .zip archive which will be built in the background
+
+-   Hover over the info icon - ![](www/circle-info-solid.svg "Hover over me for more info!"){#hover-icon width="21"} - which appears next to most features to show an informative tooltip about that feature and what to look for during QC.
 
 <br>
 

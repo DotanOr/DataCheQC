@@ -1,7 +1,13 @@
 $(document).ready(function () {
-   $("a:has(span.fa-github), p>a").attr('target','_blank').attr('rel', 'noopener noreferrer');
-   $(".navbar-brand").attr('target','_top').addClass('metallic-sheen');
-   $("img:not(.modal-content)")
+   $("a:has(span.fa-github), p>a:not(.footnote-ref, .footnote-back, .footref, #footback)")
+   .attr('target','_blank')
+   .attr('rel', 'noopener noreferrer');
+   
+   $(".navbar-brand")
+   .attr('target','_top')
+   .addClass('metallic-sheen');
+   
+   $("img:not(.modal-content, #hover-icon)")
    .attr("data-toggle","modal")
    .attr("data-target", "#imgModal")
    .attr("aria-labelledby", "imgTooltip")
@@ -60,6 +66,7 @@ $(document).ready(function () {
         } else {
           hideTooltip();
         }
+      // move the tooltip so when it's shown it follows the mouse
       img_tooltip.style.left = `${e.clientX + 5}px`;
       img_tooltip.style.top = `${e.clientY - 25}px`;
     }
@@ -78,4 +85,18 @@ $(document).ready(function () {
                .css("filter", "drop-shadow(-9px 6px 4px #00000080)");
               }
      });
+     
+     let original_location = $(".footref").first().position().top;
+     
+     $(".footref").click(function() {
+       var $clicked = $(this),
+       pos      = $clicked.position();
+       original_location = pos.top;
+       send_to = $("#footback").position().top;
+       $('html').scrollTop(send_to)
+     })
+     
+     document.getElementById("footback").addEventListener('click', function(){
+        $('html').scrollTop(original_location - $(window).height()/2);
+     })
 });

@@ -12,7 +12,7 @@
 <meta name="author" content="Or Dotan" />
 
 
-<title>Dataset Quality Checks</title>
+<title>Dataset Quality Checks - Specification File Comparison</title>
 
 <script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
@@ -374,19 +374,84 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Dataset Quality Checks</h1>
+<h1 class="title toc-ignore">Dataset Quality Checks - Specification File Comparison</h1>
 <h4 class="author">Or Dotan</h4>
 
 </div>
 
 
-<div id="title" class="section level2">
-<h2>Title</h2>
+<div id="uploading-the-specification-file" class="section level2">
+<h2>Uploading the Specification File</h2>
 <hr />
-<blockquote>
-<p><strong>Placeholder Text</strong></p>
-<p>TBA</p>
-</blockquote>
+<p>After uploading the dataset file, use the “Spec Upload” tab to access the specification file upload screen. Upload a specification file (either .docx and .xlsx format) via the <strong>Browse…</strong> button or by dragging and dropping the file in the space next to it.</p>
+<div class="figure">
+<img src="www/spec_upload_landing.png" class="img-toggle" alt="" />
+<p class="caption">The Specification File Upload Screen</p>
+</div>
+</div>
+<div id="comparison-with-the-generalevent-table" class="section level2">
+<h2>Comparison with the General/Event Table</h2>
+<hr />
+<p>After the specification file has been uploaded, multiple options will be revealed:</p>
+<ul>
+<li><p><strong>“Switch to event table”</strong>: toggle between viewing the specification General and Event Tables, which cover dataset columns and events/observations respectively.</p></li>
+<li><p><strong>“Filter optional variables / variables requiring input from the pharmacometrician”</strong>: Filter out variables according to these criteria (if those columns are included in the specification file).<sup class="footref">1</sup></p></li>
+</ul>
+<p>To the right, the selection bar allows the user to select multiple items for review, which will reveal two tables:</p>
+<ul>
+<li><p><strong>Data summary table (Top)</strong></p>
+<ul>
+<li><p>Contains a description of each variable’s unique values and their amount, the type of data (numeric, character, etc.) and the number of NA or blank values</p></li>
+<li><p>Variables that have multiple missing values will be marked in <span class="color-hover" style="--text-color: #f4ecb3;"><strong><em>yellow</em></strong></span></p></li>
+<li><p>Variables that have conflicting information (e.g., different units for the same observation) will be marked in <span class="color-hover" style="--text-color: red"><strong><em>red</em></strong></span></p></li>
+</ul></li>
+<li><p><strong>Specification for the chosen variables (Bottom)</strong></p>
+<ul>
+<li><p>Contains the parts of the specification file that correspond to the selected items and includes their type, label, typical values and other information</p></li>
+<li><p>Allows for comparison between the data summary and the specification on a per-item basis</p></li>
+</ul></li>
+<li><p>If a chosen item from the specification file is not present in the data, it will be <span style="color: red;"><em>italiczed and colored red</em></span></p></li>
+</ul>
+<div class="figure">
+<img src="www/spec_data_compared.png" alt="" />
+<p class="caption">Data-Specification Comparison Tables</p>
+</div>
+<div id="further-inspection" class="section level3">
+<h3>Further Inspection</h3>
+<hr />
+<p>If one or more items look to be defined incorrectly or have unexpected missing values, the user can look deeper into them by clicking on their corresponding row in the top table. This reveals several options:</p>
+<ul>
+<li><strong>“Review NA rows”</strong>: If the item(s) contain NA/missing values, clicking this button will show the actual rows in the dataset where this is the case, allowing the user to look for patterns (e.g., values only missing for a specific subject or timepoint) and verify that the relevant values are indeed missing.</li>
+</ul>
+<div class="figure">
+<img src="www/review_nas.png" alt="" />
+<p class="caption">The Review NA Values Screen</p>
+</div>
+<ul>
+<li><strong>“Compare and align variables”</strong>: This option becomes available when selecting two or more items. Clicking this button opens up a table where each unique value per item is compared to the other selections. This can be useful for checking whether variables that are derived from other columns in the data match the derivation as defined in the specification file (for example, if TRTNAME and TRT or TIME and TIMEUNIT match consistently).<sup class="footref">1</sup></li>
+</ul>
+<div class="figure">
+<img src="www/compare_align_vars.png" alt="" />
+<p class="caption">The Compare and Align Variables Screen</p>
+</div>
+<ul>
+<li><strong>“Add Selected variables to QC report”</strong>: will add all selected items to the QC report, which can be reviewed and edited by clicking the <strong>“Review reported variables”</strong> button.</li>
+</ul>
+</div>
+</div>
+<div id="building-the-qc-report" class="section level2">
+<h2>Building the QC Report</h2>
+<hr />
+<p>After clicking on <em>“Review reported variables”</em>, the QC report review screen will be shown. Users must enter their name at the top, and then edit the table of reported items by double clicking the corresponding cell and writing in any conclusions drawn from the comparison process.</p>
+<div class="figure">
+<img src="www/qc_report_review.png" alt="" />
+<p class="caption">The QC Report Review Screen</p>
+</div>
+<p>After completing this part of the QC report, users can move on to <a href="./eda_st.html">conducting visual checks and reviewing summary data</a>.</p>
+<hr />
+<ol style="list-style-type: decimal">
+<li>These options are only available when viewing the General Table.<a id="footback">↩︎</a></li>
+</ol>
 </div>
 
 
