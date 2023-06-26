@@ -53,9 +53,7 @@ img {
   font-style: italic;
 }
 
-.row {
-  position: absolute;
-}
+
 .tocify-extend-page{
   height: 5vh !important;
 }
@@ -64,13 +62,8 @@ div.tocify {
   min-width: max-content !important;
 }
 
-.toc-content {
-  margin: 25px 0px 20px -15px !important;
-  width: 65%;
-}
-
-.tocify-item {
-  padding-right: 10px !important;
+#TOC {
+  margin: 25px 0px 20px -30px !important;
 }
 
 /* Adding glassmorphism to the background of text, with some tweaks
