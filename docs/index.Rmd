@@ -1,6 +1,11 @@
 ---
 name: "DataCheQC Documentation"
 title: "DataCheQC Documentation"
+output: 
+    html_document:
+        anchor_sections:
+          style: "symbol"
+          depth: 2
 ---
 
 ```{r setup, include=FALSE}
@@ -31,7 +36,15 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 ------------------------------------------------------------------------
 
-### Data Handling
+### [Dataset and Specification Format](input_format.html){style="color: #2d2d2d"}
+
+-   A Generalized Format for both dataset and specification file
+
+-   Allows app outputs to be software-agnostic
+
+-   Enables working with multiple file types (.csv, .sas7bdat, .doc, .xlsx)
+
+### [Data Handling](data_handling.html){style="color: #2d2d2d"}
 
 -   Automatic detection of doses, observations, and covariates
 -   Impute missing continuous covariate values
@@ -39,7 +52,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 <br>
 
-### Dataset Quality Checks
+### [Dataset Quality Checks](dataset_qc.html){style="color: #2d2d2d"}
 
 -   Compare the dataset to the specification file's general table
 -   Compare dataset observations with the specification file's event table
@@ -52,11 +65,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 
 <br>
 
-<div>
-
-### Data Visualization and Summary Tables
-
-</div>
+### [Data Visualization and Summary Tables](eda_st.html){style="color: #2d2d2d"}
 
 -   For Each Observation:
 

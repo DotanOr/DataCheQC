@@ -105,7 +105,7 @@ knitr::kable(table3,
              caption = 'Structure of the Specification File Event Table',
 )
 htmltools::br()
-htmltools::tags$a(class = "example-link", href="www/Example_Specification_File.docx", target="_blank", "Click here to download an example of a full specification file containing both tables", download = NA)
+htmltools::tags$a(class = "example-link", href="www/Example_Specification_File.docx", target="", "Click here to download an example of a full specification file containing both tables", download = NA, rel = NA)
 ```
 
 

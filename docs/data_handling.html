@@ -14,7 +14,7 @@
 
 <title>Data Handling</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.22/header-attrs.js"></script>
 <script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/spacelab.min.css" rel="stylesheet" />
@@ -30,12 +30,15 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
-<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
 <link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
 <script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
-<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
-<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link href="site_libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="site_libs/anchor-sections-1.1.0/anchor-sections-symbol.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<link href="site_libs/font-awesome-6.2.1/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.2.1/css/v4-shims.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
 <link rel="shortcut icon" href="favicon.ico">
 <!-- Various functions for handling image interaction -->
@@ -55,6 +58,7 @@
   div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
   ul.task-list{list-style: none;}
     </style>
+
 
 
 
@@ -85,6 +89,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -142,11 +149,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -175,8 +186,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -184,16 +195,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -310,7 +314,7 @@ div.tocify {
 <div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
@@ -327,7 +331,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-print"></span>
      
     Articles
@@ -380,8 +384,8 @@ div.tocify {
 </div>
 
 
-<div id="loading-the-dataset" class="section level2">
-<h2>Loading the Dataset</h2>
+<div id="loading-the-dataset" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Loading the Dataset<a href="#loading-the-dataset" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <hr />
 <p>After making sure that <a href="./input_format.html">the dataset is in the correct format</a>, open the app either <a href="./index.html#Getting_Started">locally</a> or <a href="http://dotanor.shinyapps.io/DataCheQC">online</a>. At the app landing page, you can upload a dataset (either as a .csv or .sas7bdat file) via the <strong>Browse…</strong> button or by dragging and dropping the file in the space next to it.</p>
 <div class="figure">
@@ -390,8 +394,8 @@ div.tocify {
 </div>
 <p><br></p>
 </div>
-<div id="automatic-variable-detection" class="section level2">
-<h2>Automatic Variable Detection</h2>
+<div id="automatic-variable-detection" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Automatic Variable Detection<a href="#automatic-variable-detection" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <hr />
 <p>After the file has been uploaded, the app will attempt to identify its components:</p>
 <ul>
@@ -424,8 +428,8 @@ div.tocify {
 </div>
 <p><br></p>
 </div>
-<div id="additional-options" class="section level2">
-<h2>Additional Options</h2>
+<div id="additional-options" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Additional Options<a href="#additional-options" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Users can also perform some optional actions, such as imputing continuous covariates by their median, adding a “DRAFT” watermark to some plots, and cleaning the dataset. These options can be set both before and after a file has been uploaded.</p>
 <p>Cleaning functions include:</p>
 <ul>
@@ -437,8 +441,8 @@ div.tocify {
 <li><p>Remove ignored records (MDV=1)</p></li>
 </ul>
 </div>
-<div id="next-steps" class="section level2">
-<h2>Next Steps</h2>
+<div id="next-steps" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Next Steps<a href="#next-steps" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <hr />
 <p>In order to be able to produce the various <a href="./eda_st.html">visual analyses</a> offered by DataCheQC, the app needs to perform certain calculations on the data. This can take from a few seconds to several minutes, depending on file size. The notification at the bottom-right of the screen shows the progress of the operation, as shown in the image above.</p>
 <p>Fortunately, the app conducts this procedure in a background process, which allows the user to start on the next step in the QC workflow - <a href="./dataset_qc.html">comparing the dataset to the specification file</a> - as soon the file itself has been uploaded to the app.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>

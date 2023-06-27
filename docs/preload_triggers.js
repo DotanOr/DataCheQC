@@ -1,5 +1,5 @@
 $(document).ready(function () {
-   $("a:has(span.fa-github), p>a:not(.footnote-ref, .footnote-back, .footref, #footback)")
+   $("a:has(span.fa-github), p>a:not(.footnote-ref, .footnote-back, .footref, #footback, .example-link)")
    .attr('target','_blank')
    .attr('rel', 'noopener noreferrer');
    

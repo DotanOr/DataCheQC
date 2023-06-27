@@ -14,7 +14,7 @@
 
 <title>Dataset and Specification Format</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.22/header-attrs.js"></script>
 <script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/spacelab.min.css" rel="stylesheet" />
@@ -30,12 +30,15 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
-<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
 <link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
 <script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
-<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
-<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link href="site_libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="site_libs/anchor-sections-1.1.0/anchor-sections-symbol.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<link href="site_libs/font-awesome-6.2.1/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.2.1/css/v4-shims.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
 <link rel="shortcut icon" href="favicon.ico">
 <!-- Various functions for handling image interaction -->
@@ -55,6 +58,7 @@
   div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
   ul.task-list{list-style: none;}
     </style>
+
 
 
 
@@ -85,6 +89,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -142,11 +149,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -175,8 +186,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -184,16 +195,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -310,7 +314,7 @@ div.tocify {
 <div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
@@ -327,7 +331,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-print"></span>
      
     Articles
@@ -381,8 +385,8 @@ div.tocify {
 
 
 <hr />
-<div id="the-generalized-dataset-format" class="section level2">
-<h2>The Generalized Dataset Format</h2>
+<div id="the-generalized-dataset-format" class="section level2 hasAnchor">
+<h2 class="hasAnchor">The Generalized Dataset Format<a href="#the-generalized-dataset-format" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <hr />
 <p>To fully leverage app functionalities and process many different types of data from different sources, a standardized dataset structure needs to be assumed. <a href="https://link.springer.com/article/10.1007/s10928-014-9370-4">Schmidt et al. (2014)</a> proposed the <strong>“Generalized Dataset”</strong> as a solution for a pharmacometrics dataset format which is compound- and indication-independent, not specific to a particular type of pharmacometrics analysis, and not tied to a specific nonlinear mixed-effect (NLME) software.</p>
 <p>The format can handle various types of data, such as demographics, pharmacokinetics (PK), and pharmacodynamics (PD), and requires minimal manipulation of <a href="http://www.cdisc.org">Clinical Data Interchange Standards Consortium (CDISC)</a> data to compile a resulting dataset. The generalized dataset can be seamlessly converted to an NLME dataset suitable for analysis in <a href="https://www.iconplc.com/solutions/technologies/nonmem/index.xml">NONMEM</a> and <a href="https://www.simulations-plus.com/software/monolix/monolix/">Monolix</a> using available tools.</p>
@@ -469,13 +473,13 @@ div.tocify {
 <p><br><br />
 <br></p>
 </div>
-<div id="the-specification-file-format" class="section level2">
-<h2>The Specification File Format</h2>
+<div id="the-specification-file-format" class="section level2 hasAnchor">
+<h2 class="hasAnchor">The Specification File Format<a href="#the-specification-file-format" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <hr />
 <p>The <strong>Specification File</strong> should be compiled in a Word or Excel document. The file must contain <em>two distinct tables</em>, either in separate Word pages or Excel sheets: the <strong>General Table</strong> and the <strong>Event Table</strong>.</p>
 <p><br></p>
-<div id="the-general-table" class="section level3">
-<h3>The General Table</h3>
+<div id="the-general-table" class="section level3 hasAnchor">
+<h3 class="hasAnchor">The General Table<a href="#the-general-table" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>The <strong>General Table</strong> comprises a listing of the expected non-study specific variables (i.e., those listed in the table above), along with their description, data type (e.g., numeric, string, date, time), derivation, label and more. It can also contain optional elements specifying whether the described variable is required or not for inclusion in the dataset and/or whether it needs input from the pharmacometrician following each data update.</p>
 <table>
 <caption>Structure of the Specification File General Table</caption>
@@ -510,8 +514,8 @@ div.tocify {
 </table>
 <p><br></p>
 </div>
-<div id="the-event-table" class="section level3">
-<h3>The Event Table</h3>
+<div id="the-event-table" class="section level3 hasAnchor">
+<h3 class="hasAnchor">The Event Table<a href="#the-event-table" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>“Event” refers to a row in the two-dimensional dataset, distinguished by its NAME and VALUE/VALUETEXT, which can reflect the dosing, PK concentrations, PD observations, efficacy or safety readouts, baseline or time-dependent covariates, adverse events, co-medications, or any other relevant observation. The <strong>Event Table</strong> consequently describes the various events in the dataset, accompanied by their description, values, units, and, when applicable, limits of quantification.</p>
 <table style="width:100%;">
 <caption>Structure of the Specification File Event Table</caption>
@@ -548,7 +552,7 @@ div.tocify {
 </tbody>
 </table>
 <br/>
-<a class="example-link" href="www/Example_Specification_File.docx" target="_blank" download>Click here to download an example of a full specification file containing both tables</a>
+<a class="example-link" href="www/Example_Specification_File.docx" target="" download rel>Click here to download an example of a full specification file containing both tables</a>
 </div>
 </div>
 

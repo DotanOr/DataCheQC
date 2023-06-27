@@ -14,7 +14,7 @@
 
 <title>Exploratory Data Analaysis &amp; Summary Tables</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/header-attrs-2.22/header-attrs.js"></script>
 <script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/spacelab.min.css" rel="stylesheet" />
@@ -30,12 +30,15 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
-<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
 <link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
 <script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
-<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
-<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<link href="site_libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="site_libs/anchor-sections-1.1.0/anchor-sections-symbol.css" rel="stylesheet" />
+<script src="site_libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<link href="site_libs/font-awesome-6.2.1/css/all.min.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-6.2.1/css/v4-shims.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
 <link rel="shortcut icon" href="favicon.ico">
 <!-- Various functions for handling image interaction -->
@@ -55,6 +58,7 @@
   div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
   ul.task-list{list-style: none;}
     </style>
+
 
 
 
@@ -85,6 +89,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -142,11 +149,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -175,8 +186,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -184,16 +195,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -310,7 +314,7 @@ div.tocify {
 <div class="navbar navbar-inverse  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
@@ -327,7 +331,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-print"></span>
      
     Articles
@@ -380,13 +384,160 @@ div.tocify {
 </div>
 
 
-<div id="title" class="section level2">
-<h2>Title</h2>
+<div id="the-visualization-tab" class="section level2 hasAnchor">
+<h2 class="hasAnchor">The Visualization Tab<a href="#the-visualization-tab" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <hr />
-<blockquote>
-<p><strong>Placeholder Text</strong></p>
-<p>TBA</p>
-</blockquote>
+<p>Once the app has finished processing the uploaded dataset, the user can move into reviewing summary tables and some visual analyses by clicking on the <strong>“Visualization”</strong> tab located on the left side of the screen.</p>
+<p>The following functions are available, denoted by the tabs at the top of screen:</p>
+<ul>
+<li><p><a class = "example-link" style="align-items: baseline;" href="#summary-tables">Summary Tables</a></p></li>
+<li><p><a class = "example-link" style="align-items: baseline;" href="#graphical-exploration">Graphical Exploration</a></p></li>
+</ul>
+<div class="figure">
+<img src="www/visual_landing.png" alt="" />
+<p class="caption">The Visualization Tab</p>
+</div>
+<div id="download-options" class="section level3 hasAnchor">
+<h3 class="hasAnchor">Download Options<a href="#download-options" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<hr />
+<p>When dataset processing is completed, more features are enabled by clicking on the icon at the top left of the screen:</p>
+<ul>
+<li><p><strong>Download analysis dataset</strong>: download the processed version of the dataset (processes can include pivoting of covariate observations into separate columns and data cleaning if that option was selected).</p></li>
+<li><p><strong>Download most recent plot</strong>: can be used to download the latest plot that was created using the app. Users can choose between .png and .svg file formats, or to generate both and download them as a .zip archive.</p></li>
+</ul>
+<div class="figure">
+<img src="www/down_opts.png" alt="" />
+<p class="caption">Download Options</p>
+</div>
+<p><a class="example-link" href="www/example_analysis_dataset.csv" target="_blank" download>Click here to download an example of a dataset after app processing</a></p>
+</div>
+</div>
+<div id="summary-tables" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Summary Tables<a href="#summary-tables" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<hr />
+<p>Choosing the <strong>“Summary Table”</strong> will reveal several tables that allow the user to review different aspects of the data:</p>
+<ul>
+<li><p><strong>Analysis Dataset</strong>: This table shows the version of the dataset after processing, and like the other tables it is searchable, paginated, and can be sorted by columns.</p></li>
+<li><p><strong>Duplicated times, unanalyzed dataset</strong>: shows which participants have conflicting VALUE measurements at the same TIME.</p>
+<div class="figure">
+<img src="www/visual_tables_1.png" alt="" />
+<p class="caption">The Analysis Dataset and Duplicated Times Tables</p>
+</div></li>
+<li><p><strong>Summary of covariates</strong>: presents an overview of the distribution of covariates (both continuous and categorical) in the data, across the different STUDY values.</p>
+<div class="figure">
+<img src="www/cov_summary_tables.png" alt="" />
+<p class="caption">Covariate Summary Tables</p>
+</div></li>
+<li><p><strong>Summary of observations:</strong> summarizes observation data, such as the number of observations per study or subject, the amount of observations that are either below the lower limit of quantification (BLOQ), missing, ignored or included in the analysis.</p>
+<div class="figure">
+<img src="www/sum_obvs.png" alt="" />
+<p class="caption">Observation Summary Table</p>
+</div></li>
+</ul>
+</div>
+<div id="graphical-exploration" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Graphical Exploration<a href="#graphical-exploration" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<hr />
+<p>The “Graphical Exploration” tab offers multiple plots, split into three categories:</p>
+<div id="observation-plots" class="section level3 hasAnchor">
+<h3 class="hasAnchor">Observation Plots<a href="#observation-plots" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<hr />
+<ul>
+<li><p><strong>Spaghetti</strong>: plot the selected observation over time for each participant, split by TRTNAME and optionally stratified by one or more covariates.</p>
+<ul>
+<li><p><strong>Focus on Individual Profiles</strong>: clicking this option will show a grid plot for each participant in the same TRTNAME. This way, users can look into the individual profiles per group and note any participants that have missing or implausible values that can be flagged for inclusion in the QC report. To add an individual to the report, double click their plot.</p>
+<div class="figure">
+<img src="www/indiv_obs.png" alt="" />
+<p class="caption">Individual Observation Plots</p>
+</div></li>
+<li><p>Once at least one subject has been flagged, the <strong>“Review flagged subjects”</strong> will be revealed. clicking on it allows the user to edit the participant information with informative comments that can be added to the final QC report.</p>
+<div class="figure">
+<img src="www/rev_flag_subs.png" alt="" />
+<p class="caption">The Review Flagged Subjects Screen</p>
+</div></li>
+</ul></li>
+<li><p><strong>Median range over time</strong>: shows a summary line across participants for the selected observation for each TRTNAME</p>
+<div class="figure">
+<img src="www/med_rg_time.png" alt="" />
+<p class="caption">Median Range Over Time Plots</p>
+</div></li>
+</ul>
+<!-- -->
+<ul>
+<li><p><strong>Individual plots</strong>: shows the observation-time plot of the selected individual</p>
+<div class="figure">
+<img src="www/ind_plots.png" alt="" />
+<p class="caption">Individual Plots</p>
+</div></li>
+</ul>
+</div>
+<div id="covariate-plots" class="section level3 hasAnchor">
+<h3 class="hasAnchor">Covariate Plots<a href="#covariate-plots" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<hr />
+<p>These plots are available for both continuous and categorical covariates.</p>
+<ul>
+<li><p><strong>Covariate distribution</strong> - graphical representation of the covariate distribution</p>
+<div class="figure">
+<img src="www/cov_dist.png" alt="" />
+<p class="caption">Covariate Distribution Plots</p>
+</div></li>
+</ul>
+<!-- -->
+<ul>
+<li><p><strong>Covariate correlation</strong> - graphical representation of the correlations between covariates</p>
+<div class="figure">
+<img src="www/cov_cor.png" alt="" />
+<p class="caption">Covariate Correlation Plots</p>
+</div></li>
+</ul>
+</div>
+<div id="timing-plots" class="section level3 hasAnchor">
+<h3 class="hasAnchor">Timing Plots<a href="#timing-plots" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<hr />
+<ul>
+<li><p><strong>Actual Time vs. Nominal Time:</strong> compare actual vs nominal time. Ideally, these time measures should be similar if not identical to facilitate data summary across time. Therefor, they should be positively and highly correlated, and the differences between them should be centered around zero.</p>
+<div class="figure">
+<img src="www/at_v_nt.png" alt="" />
+<p class="caption">Actual vs. Nominal Time Plots</p>
+</div></li>
+</ul>
+<!-- -->
+<ul>
+<li><p><strong>Dosing Schedule:</strong> shows a breakdown, by participant, of dosing times; users can switch between various pages of the plot by using the counter near the top of the image. Additionally, as this plot might take some time to process, it will be calculated in parallel in the background which allows users to review other plots in the meantime.</p>
+<div class="figure">
+<img src="www/dos_sched.png" alt="" />
+<p class="caption">Dosing Schedule Plot</p>
+</div></li>
+</ul>
+<!-- -->
+<ul>
+<li><p><strong>Sampling Schedule</strong>:shows a breakdown, by participant, of sampling times; users can switch between various pages of the plot by using the counter near the top of the image. Additionally, as this plot might take some time to process, it will be calculated in parallel in the background which allows users to review other plots in the meantime.</p>
+<div class="figure">
+<img src="www/sampling_sched.png" alt="" />
+<p class="caption">Sampling Schedule Plot</p>
+</div></li>
+</ul>
+</div>
+<div id="additional-options" class="section level3 hasAnchor">
+<h3 class="hasAnchor">Additional Options<a href="#additional-options" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<hr />
+<ul>
+<li><p><strong>Generate all graphs and tables</strong>: clicking this button will generate each of the aforementioned plots and tables and download them as a time-stamped .zip archive file.</p></li>
+<li><p><strong>Switch to Report Tab</strong>: a shortcut that will take the user to the QC report tab to finalize report findings.</p></li>
+</ul>
+</div>
+</div>
+<div id="finalizing-the-qc-report" class="section level2 hasAnchor">
+<h2 class="hasAnchor">Finalizing the QC Report<a href="#finalizing-the-qc-report" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<hr />
+<p>At the <strong>“Data Specs ➤ Spec Upload”</strong> Tab, clicking the <strong>“Review reported variables”</strong> will bring up the current state of the report. Here, users can edit the report, and add or remove any relevant details, including choosing which elements should be included in the generated report (the three check-boxes at the bottom of the screen).</p>
+<p>After the report is considered finished, clicking the <strong>“Save Report”</strong> button will download the QC report as a .docx file.</p>
+<div class="figure">
+<img src="www/finalize_qc.png" alt="" />
+<p class="caption">Finalizing the QC Report</p>
+</div>
+<p>Additionally, a saved report file can be re-uploaded into the app by clicking the <strong>“Upload Existing Report”</strong>, allowing revisions and updates to the report to be conducted within the app.</p>
+<p><a class="example-link" href="www/EXAMPLE_DATASET QC Report.docx" target="_blank" download>Click here to download an example of a QC Report generated by the app</a></p>
 </div>
 
 

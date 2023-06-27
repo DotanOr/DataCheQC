@@ -27,6 +27,8 @@ navbar:
         href: eda_st.html
 output: 
     html_document:
+        anchor_sections:
+          style: "symbol"
         css: styles.css
         toc: true
         toc_float: true
