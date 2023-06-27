@@ -3,6 +3,14 @@ $(document).ready(function () {
    .attr('target','_blank')
    .attr('rel', 'noopener noreferrer');
    
+   
+  window.addEventListener("load", (event) => {
+    if(window.location.pathname.includes("index"))
+    {
+      $("li.tocify-item > a").removeAttr("href");
+    };
+  });
+   
    $(".navbar-brand")
    .attr('target','_top')
    .addClass('metallic-sheen');

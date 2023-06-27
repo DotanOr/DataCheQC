@@ -62,6 +62,14 @@ img {
   height: 5vh !important;
 }
 
+.list-group-item.active > a {
+  color: white !important;
+}
+
+.list-group-item:hover > a {
+  text-decoration: none;
+}
+
 div.tocify {
   min-width: max-content !important;
 }
