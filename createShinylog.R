@@ -1,5 +1,5 @@
 createShinylog <- function(outputfilename, user = "App User"){
-  COMPLIANCE_MODE_SCRIPT_NAME <- "DataExploR Shiny App Server"
+  COMPLIANCE_MODE_SCRIPT_NAME <- "DataCheQC Shiny App Server"
   title <- "<TT>   File generation log"
   logfile_name <- paste(as.character(outputfilename), 
                         ".log", sep = "")
