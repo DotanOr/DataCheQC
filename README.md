@@ -1,7 +1,9 @@
 
 # DataCheQC
 
-A Shiny app for pefroming pharmacometrics-related quality checks (PMX QC) 
+A Shiny app for pefroming pharmacometrics-related quality checks (PMX QC).  
+  
+Read the paper associated with this project, published in [CPT: Pharmacometrics & Systems Pharmacology](https://doi.org/10.1002/psp4.13017).
 
 # Installation
 
