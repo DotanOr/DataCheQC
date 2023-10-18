@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = T, eval = F)
 >
 > The open-source app, which requires no programming knowledge to operate, also allows the user to collect all findings into a **summary QC Report** which can be downloaded directly from the app.
 
+For more information and background on the creation of this project, check out the associated paper published in [CPT: Pharmacometrics & Systems Pharmacology](https://doi.org/10.1002/psp4.13017).
 <br>
 
 ## The QC Workflow

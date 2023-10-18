@@ -8,6 +8,9 @@ navbar:
       icon: fa-envelope
       href: "mailto:dotanor@gmail.com"
     - text: ""
+      icon: fa-microscope
+      href: "https://doi.org/10.1002/psp4.13017"
+    - text: ""
       icon: fa-github
       href: https://github.com/DotanOr/DataCheQC
   left:
